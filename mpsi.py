@@ -25,6 +25,9 @@ _DOVISH_WEIGHTS = {
     "softening": -1,
 }
 
+_BASELINE_SCORE = 50.0
+_SCALE_FACTOR = 25.0
+
 
 def score_statement(statement: str) -> Dict[str, object]:
     """Score an FOMC statement and return normalized sentiment details.
@@ -52,10 +55,12 @@ def score_statement(statement: str) -> Dict[str, object]:
             matched_terms.append(token)
 
     if not matched_terms:
-        normalized_score = 50.0
+        normalized_score = _BASELINE_SCORE
     else:
         avg_weight = raw_score / len(matched_terms)
-        normalized_score = max(0.0, min(100.0, 50.0 + (avg_weight * 25.0)))
+        normalized_score = max(
+            0.0, min(100.0, _BASELINE_SCORE + (avg_weight * _SCALE_FACTOR))
+        )
 
     if normalized_score > 55:
         label = "hawkish"
