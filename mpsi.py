@@ -57,6 +57,7 @@ def score_statement(statement: str) -> Dict[str, object]:
     if not matched_terms:
         normalized_score = _BASELINE_SCORE
     else:
+        # `matched_terms` is guaranteed non-empty in this branch.
         avg_weight = raw_score / len(matched_terms)
         normalized_score = max(
             0.0, min(100.0, _BASELINE_SCORE + (avg_weight * _SCALE_FACTOR))
@@ -71,6 +72,7 @@ def score_statement(statement: str) -> Dict[str, object]:
 
     return {
         "raw_score": raw_score,
+        # Keep a stable, human-readable score precision for reporting.
         "normalized_score": round(normalized_score, 2),
         "label": label,
         "matched_terms": matched_terms,
