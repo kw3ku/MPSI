@@ -32,6 +32,4 @@ beautifulsoup4
 gunicorn
 
 
-# For development, you can also install the following (not required for production):
-# For development server with auto-reload
-# pip install flask[dev]
+
