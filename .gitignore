@@ -73,3 +73,11 @@ mpsi_context/
 # Server notes / deployment scratch files
 doc.txt
 
+# Internal planning / private notes
+ACTION_PLAN.md
+EXPERT_ANALYSIS.md
+PAPER_STATS_REFERENCE.md
+Roadmap.md
+flow.md
+github.md
+
