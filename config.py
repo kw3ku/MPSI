@@ -191,8 +191,10 @@ class ProductionConfig(Config):
     DEBUG = False
     TESTING = False
     
-    # Use environment variable for secret key (with fallback for initial testing)
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'CHANGE-THIS-IN-PRODUCTION-DEPLOYMENT'
+    # Secret key must be set via environment variable in production
+    SECRET_KEY = os.environ.get('SECRET_KEY')
+    if not SECRET_KEY:
+        raise RuntimeError("SECRET_KEY environment variable must be set in production")
     
     # Stricter rate limiting
     API_RATE_LIMIT = '50 per hour'
