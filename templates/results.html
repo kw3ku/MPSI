@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Analysis Results{% endblock %}
+
+{% block content %}
+<div class="page">
+    <div style="max-width:900px;margin:0 auto;">
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
+            <h2 style="font-size:1.25rem;font-weight:700;"><i class="fas fa-file-alt" style="color:var(--accent-light);margin-right:.5rem;"></i>Analysis Results</h2>
+            <a href="/upload" class="btn btn-outline btn-sm"><i class="fas fa-arrow-left"></i> Analyze Another</a>
+        </div>
+
+        <!-- MPSI Score Card -->
+        <div class="card" style="margin-bottom:1.5rem;">
+            <div class="card-header" style="background:{% if result.stance == 'Hawkish' %}rgba(239,68,68,0.15){% elif result.stance == 'Dovish' %}rgba(59,130,246,0.15){% else %}rgba(107,114,128,0.15){% endif %};">
+                <span class="card-title"><i class="fas fa-tachometer-alt"></i> MPSI Score · {{ result.filename }}</span>
+                <span class="tag {{ result.stance | lower }}">{{ result.stance }}</span>
+            </div>
+            <div class="card-body">
+                <div style="display:grid;grid-template-columns:auto 1fr;gap:2rem;align-items:center;">
+                    <div style="text-align:center;">
+                        <div style="font-size:5rem;font-weight:700;font-family:'JetBrains Mono',monospace;
+                            color:{% if result.stance == 'Hawkish' %}var(--hawkish-light){% elif result.stance == 'Dovish' %}var(--dovish-light){% else %}var(--neutral-light){% endif %};">
+                            {{ result.mpsi_score }}
+                        </div>
+                        <div style="font-size:13px;color:var(--text-muted);">Confidence: <strong style="color:var(--text-primary);">{{ result.confidence }}</strong></div>
+                        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">{{ result.timestamp }}</div>
+                    </div>
+                    <div>
+                        <!-- MPSI Scale Bar -->
+                        <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:.5rem;text-transform:uppercase;letter-spacing:.5px;">MPSI Scale</div>
+                        <div style="display:flex;border-radius:6px;overflow:hidden;height:28px;margin-bottom:.5rem;">
+                            <div style="flex:1;background:var(--dovish-bg);border:1px solid var(--dovish);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--dovish-light);font-weight:600;">Dovish</div>
+                            <div style="flex:1;background:var(--neutral-bg);border:1px solid var(--neutral);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--neutral-light);font-weight:600;">Neutral</div>
+                            <div style="flex:1;background:var(--hawkish-bg);border:1px solid var(--hawkish);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--hawkish-light);font-weight:600;">Hawkish</div>
+                        </div>
+                        <div style="font-size:11px;color:var(--text-muted);text-align:center;">← −100 &nbsp;&nbsp;&nbsp; −10 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; +10 &nbsp;&nbsp;&nbsp;&nbsp; +100 →</div>
+
+                        <!-- Keyword & FinBERT scores -->
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1.25rem;">
+                            <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-md);padding:1rem;text-align:center;">
+                                <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.25rem;">Keyword Score</div>
+                                <div style="font-size:1.75rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--accent-light);">{{ result.keyword_mpsi | default('—') }}</div>
+                                <div style="font-size:11px;color:var(--text-muted);">70% weight</div>
+                            </div>
+                            <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-md);padding:1rem;text-align:center;">
+                                <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.25rem;">FinBERT Score</div>
+                                <div style="font-size:1.75rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--accent-light);">{{ result.finbert_mpsi | default('—') }}</div>
+                                <div style="font-size:11px;color:var(--text-muted);">30% weight</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Keyword Breakdown -->
+        <div class="card" style="margin-bottom:1.5rem;">
+            <div class="card-header">
+                <span class="card-title"><i class="fas fa-search"></i> Keyword Detection</span>
+                <span style="font-size:12px;color:var(--text-muted);">{{ result.total_keywords }} policy terms found</span>
+            </div>
+            <div class="card-body">
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.25rem;">
+                    <div style="background:var(--hawkish-bg);border:1px solid var(--hawkish);border-radius:var(--radius-md);padding:1rem;text-align:center;">
+                        <div style="font-size:2rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--hawkish-light);">{{ result.hawkish_keywords | default(0) }}</div>
+                        <div style="font-size:12px;color:var(--hawkish-light);margin-top:4px;"><i class="fas fa-arrow-up"></i> Hawkish Terms</div>
+                    </div>
+                    <div style="background:var(--neutral-bg);border:1px solid var(--neutral);border-radius:var(--radius-md);padding:1rem;text-align:center;">
+                        <div style="font-size:2rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--neutral-light);">{{ result.neutral_keywords | default(0) }}</div>
+                        <div style="font-size:12px;color:var(--neutral-light);margin-top:4px;"><i class="fas fa-minus"></i> Neutral Terms</div>
+                    </div>
+                    <div style="background:var(--dovish-bg);border:1px solid var(--dovish);border-radius:var(--radius-md);padding:1rem;text-align:center;">
+                        <div style="font-size:2rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--dovish-light);">{{ result.dovish_keywords | default(0) }}</div>
+                        <div style="font-size:12px;color:var(--dovish-light);margin-top:4px;"><i class="fas fa-arrow-down"></i> Dovish Terms</div>
+                    </div>
+                </div>
+                <table class="stats-table">
+                    <tbody>
+                        <tr><td>Word Count</td><td class="mono">{{ result.word_count }}</td></tr>
+                        <tr><td>Total Policy Keywords</td><td class="mono">{{ result.total_keywords }}</td></tr>
+                        <tr><td>Keyword Signal Ratio</td><td class="mono">{{ "%.1f"|format(result.total_keywords / result.word_count * 100 if result.word_count else 0) }}%</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Text Preview -->
+        {% if result.text_preview %}
+        <div class="card" style="margin-bottom:1.5rem;">
+            <div class="card-header">
+                <span class="card-title"><i class="fas fa-file-text"></i> Document Preview</span>
+            </div>
+            <div class="card-body">
+                <pre style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;font-size:12px;color:var(--text-secondary);white-space:pre-wrap;font-family:'JetBrains Mono',monospace;max-height:300px;overflow-y:auto;">{{ result.text_preview }}</pre>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Actions -->
+        <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+            <a href="/results/{{ analysis_id }}/pdf" class="btn btn-primary"><i class="fas fa-file-pdf"></i> Export PDF Report</a>
+            <a href="/results" class="btn btn-outline"><i class="fas fa-list"></i> All Results</a>
+            <a href="/upload" class="btn btn-outline"><i class="fas fa-upload"></i> Analyze Another</a>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

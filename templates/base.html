@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}FedMPSI{% endblock %} — Monetary Policy Sentiment Index</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+
+    <style>
+        :root {
+            --bg-primary:     #0a0e1a;
+            --bg-secondary:   #111827;
+            --bg-card:        #1a2235;
+            --bg-card-hover:  #1e2a40;
+            --border:         #2a3650;
+            --border-light:   #334466;
+            --text-primary:   #f0f4ff;
+            --text-secondary: #8899bb;
+            --text-muted:     #556688;
+            --hawkish:        #ef4444;
+            --hawkish-light:  #fca5a5;
+            --hawkish-bg:     rgba(239,68,68,0.1);
+            --dovish:         #3b82f6;
+            --dovish-light:   #93c5fd;
+            --dovish-bg:      rgba(59,130,246,0.1);
+            --neutral:        #6b7280;
+            --neutral-light:  #d1d5db;
+            --neutral-bg:     rgba(107,114,128,0.1);
+            --accent:         #6366f1;
+            --accent-light:   #a5b4fc;
+            --success:        #10b981;
+            --warning:        #f59e0b;
+            --radius-sm: 6px; --radius-md: 10px; --radius-lg: 16px;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
+            --shadow-md: 0 4px 16px rgba(0,0,0,0.5);
+            --glow-accent: 0 0 20px rgba(99,102,241,0.3);
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; line-height: 1.6; }
+
+        /* NAV */
+        .navbar { position: sticky; top: 0; z-index: 100; background: rgba(10,14,26,0.95); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); padding: 0 2rem; height: 64px; display: flex; align-items: center; justify-content: space-between; }
+        .nav-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .nav-logo { width: 36px; height: 36px; background: linear-gradient(135deg, var(--accent), #818cf8); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: white; }
+        .nav-title { font-weight: 700; font-size: 18px; color: var(--text-primary); }
+        .nav-subtitle { font-size: 11px; color: var(--text-muted); }
+        .nav-links { display: flex; gap: 0.25rem; list-style: none; }
+        .nav-links a { text-decoration: none; color: var(--text-secondary); padding: 6px 14px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; transition: all 0.2s; }
+        .nav-links a:hover, .nav-links a.active { background: var(--bg-card); color: var(--text-primary); }
+        .nav-badge { background: var(--success); color: white; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 20px; margin-left: 6px; }
+        .live-indicator { display: flex; align-items: center; gap: 8px; background: var(--bg-card); border: 1px solid var(--border); padding: 8px 16px; border-radius: 20px; font-size: 13px; color: var(--text-muted); white-space: nowrap; }
+        .live-dot { width: 8px; height: 8px; background: var(--success); border-radius: 50%; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.3)} }
+
+        /* LAYOUT */
+        .page { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+
+        /* CARD */
+        .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+        .card-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+        .card-title { font-size: 14px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
+        .card-title i { color: var(--accent-light); font-size: 13px; }
+        .card-body { padding: 1.5rem; }
+
+        /* BUTTONS */
+        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; border: none; cursor: pointer; transition: all 0.2s; text-decoration: none; }
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-primary:hover { background: #4f46e5; transform: translateY(-1px); box-shadow: var(--glow-accent); }
+        .btn-outline { background: transparent; border: 1px solid var(--border-light); color: var(--text-secondary); }
+        .btn-outline:hover { border-color: var(--accent); color: var(--accent-light); }
+        .btn-sm { padding: 6px 14px; font-size: 12px; }
+        .btn-danger { background: var(--hawkish); color: white; }
+        .btn-danger:hover { background: #dc2626; }
+
+        /* TAGS / BADGES */
+        .tag { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 9px; border-radius: 20px; text-transform: uppercase; letter-spacing: .5px; }
+        .tag.hawkish { background: var(--hawkish-bg); color: var(--hawkish-light); border: 1px solid var(--hawkish); }
+        .tag.dovish  { background: var(--dovish-bg);  color: var(--dovish-light);  border: 1px solid var(--dovish); }
+        .tag.neutral { background: var(--neutral-bg); color: var(--neutral-light); border: 1px solid var(--neutral); }
+
+        /* TABLES */
+        .stats-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .stats-table thead th { text-align: left; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); }
+        .stats-table tbody td { padding: 0.65rem 0.75rem; border-bottom: 1px solid rgba(42,54,80,0.5); color: var(--text-secondary); }
+        .stats-table tbody tr:last-child td { border-bottom: none; }
+        .stats-table tbody tr:hover td { background: rgba(99,102,241,0.05); color: var(--text-primary); }
+        .mono { font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+
+        /* FLASH MESSAGES */
+        .flash-container { max-width: 1400px; margin: 1rem auto 0; padding: 0 2rem; }
+        .flash { padding: 12px 16px; border-radius: var(--radius-sm); font-size: 13px; display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+        .flash.success { background: rgba(16,185,129,0.15); border: 1px solid var(--success); color: #6ee7b7; }
+        .flash.danger  { background: rgba(239,68,68,0.15);  border: 1px solid var(--hawkish); color: var(--hawkish-light); }
+        .flash.warning { background: rgba(245,158,11,0.15); border: 1px solid var(--warning);  color: #fcd34d; }
+        .flash.info    { background: rgba(99,102,241,0.15); border: 1px solid var(--accent);   color: var(--accent-light); }
+
+        /* FORM ELEMENTS */
+        .form-group { margin-bottom: 1.25rem; }
+        .form-label { display: block; font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.5rem; }
+        .form-control { width: 100%; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 14px; color: var(--text-primary); font-size: 14px; font-family: inherit; transition: border-color 0.2s; }
+        .form-control:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
+        .form-text { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+        textarea.form-control { resize: vertical; min-height: 120px; }
+
+        /* UPLOAD ZONE */
+        .upload-zone { border: 2px dashed var(--border-light); border-radius: var(--radius-md); padding: 2rem; text-align: center; cursor: pointer; transition: all 0.2s; position: relative; }
+        .upload-zone:hover, .upload-zone.dragging { border-color: var(--accent); background: rgba(99,102,241,0.05); }
+        .upload-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+        .upload-zone i { font-size: 2rem; color: var(--text-muted); margin-bottom: 0.75rem; display: block; }
+        .upload-zone h3 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+        .upload-zone p { font-size: 12px; color: var(--text-muted); }
+
+        /* PROGRESS BAR */
+        .progress-track { background: var(--bg-primary); border-radius: 4px; height: 8px; overflow: hidden; margin-bottom: 1rem; }
+        .progress-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent), #818cf8); transition: width 0.6s; }
+
+        /* SECTION HEADER */
+        .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+        .section-title { font-size: 1.25rem; font-weight: 700; }
+
+        /* HAWKISH/DOVISH TEXT COLORS */
+        .hawkish-text { color: var(--hawkish-light); }
+        .dovish-text  { color: var(--dovish-light); }
+        .neutral-text { color: var(--neutral-light); }
+        .accent-text  { color: var(--accent-light); }
+        .muted-text   { color: var(--text-muted); }
+        .success-text { color: var(--success); }
+
+        /* FOOTER */
+        .footer { border-top: 1px solid var(--border); padding: 1.5rem 2rem; text-align: center; font-size: 12px; color: var(--text-muted); max-width: 1400px; margin: 2rem auto 0; }
+        .footer a { color: var(--accent-light); text-decoration: none; }
+        .footer a:hover { text-decoration: underline; }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) { .nav-links { display: none; } .page { padding: 1rem; } }
+    </style>
+    {% block head %}{% endblock %}
+</head>
+<body>
+
+<nav class="navbar">
+    <a href="/" class="nav-brand">
+        <div class="nav-logo">M</div>
+        <div>
+            <div class="nav-title">FedMPSI</div>
+            <div class="nav-subtitle">Monetary Policy Sentiment Index</div>
+        </div>
+    </a>
+    <ul class="nav-links">
+        <li><a href="/"        class="{{ 'active' if request.endpoint == 'dashboard.index'   }}"><i class="fas fa-chart-line"></i> Dashboard</a></li>
+        <li><a href="/upload"  class="{{ 'active' if request.endpoint == 'analyze.upload'    }}"><i class="fas fa-upload"></i> Analyze</a></li>
+        <li><a href="/history" class="{{ 'active' if request.endpoint == 'dashboard.history' }}"><i class="fas fa-history"></i> History</a></li>
+        <li><a href="/about"   class="{{ 'active' if request.endpoint == 'dashboard.about'   }}"><i class="fas fa-flask"></i> Methodology</a></li>
+        <li><a href="/api/docs" style="color:var(--accent-light);"><i class="fas fa-plug"></i> API <span class="nav-badge">v1</span></a></li>
+    </ul>
+    <div class="live-indicator">
+        <div class="live-dot"></div>
+        <span>Live · fedmpsi.com</span>
+    </div>
+</nav>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="flash-container">
+    {% for category, message in messages %}
+    <div class="flash {{ category }}">
+        <i class="fas fa-{% if category == 'success' %}check-circle{% elif category == 'danger' %}exclamation-circle{% else %}exclamation-triangle{% endif %}"></i>
+        {{ message }}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endwith %}
+
+{% block content %}{% endblock %}
+
+<div class="footer">
+    <p>
+        <strong>FedMPSI</strong> · Monetary Policy Sentiment Index ·
+        Validated r = 0.689 with Fed Funds Rate · 2–3 month lead time ·
+        <a href="/about">Methodology</a> ·
+        <a href="https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6859459" target="_blank">SSRN 6859459</a> ·
+        <a href="https://github.com/kw3ku/MPSI" target="_blank">GitHub</a>
+    </p>
+    <p style="margin-top:4px;">© 2026 FedMPSI · Dompreh (2026) · FinBERT + Policy Keyword Detection</p>
+</div>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

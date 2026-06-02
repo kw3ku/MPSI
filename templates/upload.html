@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}Analyze Document{% endblock %}
+
+{% block content %}
+<div class="page">
+    <div style="max-width:780px;margin:0 auto;">
+
+        <!-- Sample documents -->
+        <div class="card" style="margin-bottom:1.5rem;">
+            <div class="card-header">
+                <span class="card-title"><i class="fas fa-download"></i> Sample Documents for Testing</span>
+                <span style="font-size:11px;color:var(--success);">Try instantly</span>
+            </div>
+            <div class="card-body">
+                <p style="font-size:13px;color:var(--text-secondary);margin-bottom:1rem;">
+                    <strong style="color:var(--text-primary);">No Fed document on hand?</strong>
+                    Download a pre-scored example and upload it below.
+                </p>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;">
+                    <div class="card" style="border-color:var(--hawkish);">
+                        <div class="card-body" style="text-align:center;padding:1.25rem;">
+                            <i class="fas fa-arrow-up" style="font-size:2rem;color:var(--hawkish-light);"></i>
+                            <div style="font-weight:600;margin:.75rem 0 .25rem;">Hawkish Example</div>
+                            <div style="font-size:12px;color:var(--text-muted);margin-bottom:.75rem;">March 2022 FOMC Statement<br><strong style="color:var(--hawkish-light);">Expected MPSI: +23.5</strong></div>
+                            <a href="/download-sample/hawkish" class="btn btn-danger btn-sm" style="width:100%;justify-content:center;"><i class="fas fa-download"></i> Download</a>
+                        </div>
+                    </div>
+                    <div class="card" style="border-color:var(--neutral);">
+                        <div class="card-body" style="text-align:center;padding:1.25rem;">
+                            <i class="fas fa-minus-circle" style="font-size:2rem;color:var(--neutral-light);"></i>
+                            <div style="font-weight:600;margin:.75rem 0 .25rem;">Neutral Example</div>
+                            <div style="font-size:12px;color:var(--text-muted);margin-bottom:.75rem;">July 2021 FOMC Statement<br><strong style="color:var(--neutral-light);">Expected MPSI: −5.3</strong></div>
+                            <a href="/download-sample/neutral" class="btn btn-outline btn-sm" style="width:100%;justify-content:center;"><i class="fas fa-download"></i> Download</a>
+                        </div>
+                    </div>
+                    <div class="card" style="border-color:var(--dovish);">
+                        <div class="card-body" style="text-align:center;padding:1.25rem;">
+                            <i class="fas fa-arrow-down" style="font-size:2rem;color:var(--dovish-light);"></i>
+                            <div style="font-weight:600;margin:.75rem 0 .25rem;">Dovish Example</div>
+                            <div style="font-size:12px;color:var(--text-muted);margin-bottom:.75rem;">March 2020 Emergency Cut<br><strong style="color:var(--dovish-light);">Expected MPSI: −44.2</strong></div>
+                            <a href="/download-sample/dovish" class="btn btn-outline btn-sm" style="width:100%;justify-content:center;border-color:var(--dovish);color:var(--dovish-light);"><i class="fas fa-download"></i> Download</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="flash info" style="margin-top:1rem;margin-bottom:0;">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Quick test:</strong> Download any sample → upload below → MPSI result in 2–5 seconds.
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload form -->
+        <div class="card" style="margin-bottom:1.5rem;">
+            <div class="card-header">
+                <span class="card-title"><i class="fas fa-upload"></i> Upload Fed Document</span>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data" id="uploadForm">
+                    <div class="form-group">
+                        <label class="form-label">Select Document</label>
+                        <input class="form-control" type="file" id="file" name="file" accept=".txt,.pdf,.doc,.docx" required>
+                        <div class="form-text">Supported: .txt · .pdf · .doc · .docx (max 16 MB)</div>
+                    </div>
+                    <div class="upload-zone" id="dropZone" style="margin-bottom:1.25rem;">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <h3 style="font-size:14px;font-weight:600;margin-bottom:4px;">Drag &amp; drop your file here</h3>
+                        <p>or use the file picker above</p>
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="submitBtn" style="width:100%;justify-content:center;">
+                        <i class="fas fa-brain"></i> Analyze Document
+                    </button>
+                </form>
+                <div id="loadingDiv" style="display:none;text-align:center;margin-top:1.5rem;">
+                    <i class="fas fa-spinner fa-spin" style="font-size:2rem;color:var(--accent-light);"></i>
+                    <p style="margin-top:.75rem;color:var(--text-secondary);font-size:14px;">
+                        <strong style="color:var(--text-primary);">Analyzing document…</strong><br>
+                        Running FinBERT + keyword detection. Takes 2–10 seconds.
+                    </p>
+                    <div class="progress-track" style="margin-top:1rem;">
+                        <div class="progress-fill" style="width:100%;animation:none;background:linear-gradient(90deg,var(--accent),#818cf8);"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- How it works -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title"><i class="fas fa-info-circle"></i> How It Works</span>
+            </div>
+            <div class="card-body">
+                <ol style="padding-left:1.25rem;color:var(--text-secondary);font-size:13px;line-height:2;">
+                    <li><strong style="color:var(--text-primary);">Download</strong> a sample or bring your own Fed document</li>
+                    <li><strong style="color:var(--text-primary);">Upload</strong> the .txt / .pdf file using the form above</li>
+                    <li><strong style="color:var(--text-primary);">Analysis</strong> runs in 2–10 seconds:
+                        <ul style="margin-top:.25rem;">
+                            <li>70% Policy keyword detection (35+ hawkish / dovish terms)</li>
+                            <li>30% FinBERT contextual sentiment (handles negation &amp; conditionality)</li>
+                        </ul>
+                    </li>
+                    <li><strong style="color:var(--text-primary);">MPSI Score</strong> returned instantly:
+                        <span class="tag hawkish">+10 to +100 Hawkish</span>&nbsp;
+                        <span class="tag neutral">−10 to +10 Neutral</span>&nbsp;
+                        <span class="tag dovish">−100 to −10 Dovish</span>
+                    </li>
+                    <li><strong style="color:var(--text-primary);">Results page</strong> shows keyword breakdown, FinBERT probabilities, and policy interpretation</li>
+                </ol>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('file');
+dropZone.addEventListener('dragover', e=>{e.preventDefault();dropZone.classList.add('dragging');});
+dropZone.addEventListener('dragleave', ()=>dropZone.classList.remove('dragging'));
+dropZone.addEventListener('drop', e=>{
+    e.preventDefault(); dropZone.classList.remove('dragging');
+    if(e.dataTransfer.files.length){ fileInput.files=e.dataTransfer.files; dropZone.querySelector('h3').textContent=e.dataTransfer.files[0].name; }
+});
+document.getElementById('uploadForm').addEventListener('submit', ()=>{
+    document.getElementById('submitBtn').disabled=true;
+    document.getElementById('loadingDiv').style.display='block';
+});
+</script>
+{% endblock %}

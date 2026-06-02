@@ -1,0 +1,75 @@
+# Python
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.Python
+
+# Environment / secrets
+.env
+.env.*
+credentials.json
+secrets/
+
+# Model weights (use HuggingFace instead)
+*.pt
+*.bin
+*.pkl
+models/*.pt
+models/*.bin
+
+# macOS
+.DS_Store
+.AppleDouble
+
+# Uploads (user files, not for repo)
+uploads/
+
+# Logs
+logs/
+*.log
+
+# Raw Fed documents (copyright)
+data/us_fed/
+data/ghana_bog/
+data/fed_statements/
+data/database/
+
+# Private / NIW files
+NIW*
+NIW.pdf
+*_NIW*
+
+# LaTeX build artifacts (keep .tex out until journal acceptance)
+*.aux
+*.log
+*.out
+*.synctex.gz
+*.toc
+*.bbl
+*.blg
+appendix.tex
+methodology_newnew.tex
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Zip archives
+*.zip
+
+# Test HTML prototypes
+test1.html
+test2.html
+
+# Old/duplicate context folder
+mpsi_context/
+
+# VS Code
+.vscode/
+
+# Server notes / deployment scratch files
+doc.txt
+

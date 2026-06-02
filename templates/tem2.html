@@ -1,0 +1,188 @@
+<!-- filepath: mpsi-dashboard/templates/index.html -->
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="jumbotron bg-gradient-primary text-white p-5 rounded shadow">
+            <h1 class="display-4">
+                <i class="bi bi-graph-up-arrow"></i>
+                Monetary Policy Sentiment Index
+            </h1>
+            <p class="lead">
+                Real-time AI-powered analysis of Federal Reserve communications
+            </p>
+            <hr class="my-4 bg-white">
+            <p>
+                Upload Fed documents to get instant MPSI scores using our hybrid 
+                NLP approach (70% policy keywords + 30% FinBERT sentiment analysis)
+            </p>
+            <a class="btn btn-light btn-lg" href="/upload" role="button">
+                <i class="bi bi-upload me-2"></i>Analyze Your First Document
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card border-primary shadow-sm">
+            <div class="card-body text-center">
+                <i class="bi bi-file-earmark-text text-primary" style="font-size: 2rem;"></i>
+                <h3 class="mt-2 mb-0">{{ stats.total_analyzed }}</h3>
+                <p class="text-muted mb-0">Documents Analyzed</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card border-info shadow-sm">
+            <div class="card-body text-center">
+                <i class="bi bi-speedometer text-info" style="font-size: 2rem;"></i>
+                <h3 class="mt-2 mb-0">{{ stats.avg_mpsi }}</h3>
+                <p class="text-muted mb-0">Average MPSI</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card border-danger shadow-sm">
+            <div class="card-body text-center">
+                <i class="bi bi-arrow-up-circle text-danger" style="font-size: 2rem;"></i>
+                <h3 class="mt-2 mb-0">{{ stats.hawkish_count }}</h3>
+                <p class="text-muted mb-0">Hawkish Documents</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card border-primary shadow-sm">
+            <div class="card-body text-center">
+                <i class="bi bi-arrow-down-circle text-primary" style="font-size: 2rem;"></i>
+                <h3 class="mt-2 mb-0">{{ stats.dovish_count }}</h3>
+                <p class="text-muted mb-0">Dovish Documents</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Analysis -->
+{% if recent %}
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-clock-history me-2"></i>Recent Analyses
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Filename</th>
+                                <th>MPSI Score</th>
+                                <th>Stance</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for analysis in recent %}
+                            <tr>
+                                <td>{{ analysis.timestamp }}</td>
+                                <td>
+                                    <i class="bi bi-file-earmark-text me-1"></i>
+                                    {{ analysis.filename }}
+                                </td>
+                                <td>
+                                    <strong>{{ analysis.mpsi_score }}</strong>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ analysis.stance_color }}">
+                                        {{ analysis.stance }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="/results/{{ loop.revindex0 }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye me-1"></i>View Details
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-inbox text-muted" style="font-size: 4rem;"></i>
+                <h4 class="mt-3">No analyses yet</h4>
+                <p class="text-muted">Upload your first Fed document to get started!</p>
+                <a href="/upload" class="btn btn-primary">
+                    <i class="bi bi-upload me-2"></i>Upload Document
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Features -->
+<div class="row mt-5">
+    <div class="col-md-4 mb-3">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-lightning-charge text-warning me-2"></i>
+                    Instant Analysis
+                </h5>
+                <p class="card-text">
+                    Upload any Fed document and get MPSI scores in seconds. 
+                    Our hybrid model combines keyword detection with AI sentiment analysis.
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-check-circle text-success me-2"></i>
+                    Validated Method
+                </h5>
+                <p class="card-text">
+                    Strong correlation (r = 0.689) with actual Fed policy rates. 
+                    Validated on 119 documents from 2020-2026.
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-graph-up text-info me-2"></i>
+                    Predictive Power
+                </h5>
+                <p class="card-text">
+                    MPSI shows 3-6 month lead time on policy changes with 
+                    correlation up to 0.85 for forward predictions.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

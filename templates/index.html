@@ -1,0 +1,499 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block head %}
+<style>
+    .kpi-grid { display: grid; grid-template-columns: repeat(6,1fr); gap: 1rem; margin-bottom: 2rem; }
+    .kpi-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1.25rem; transition: all 0.2s; position: relative; overflow: hidden; }
+    .kpi-card::before { content:''; position:absolute; top:0;left:0;right:0; height:2px; background: linear-gradient(90deg, var(--accent), transparent); }
+    .kpi-card:hover { border-color: var(--border-light); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+    .kpi-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .8px; margin-bottom: .5rem; }
+    .kpi-value { font-size: 1.75rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; line-height:1; margin-bottom:.25rem; }
+    .kpi-delta { font-size: 12px; color: var(--text-muted); }
+    .kpi-delta.up { color: var(--success); }
+    .kpi-card.hawkish .kpi-value { color: var(--hawkish-light); }
+    .kpi-card.dovish  .kpi-value { color: var(--dovish-light); }
+    .kpi-card.neutral .kpi-value { color: var(--neutral-light); }
+    .kpi-card.accent  .kpi-value { color: var(--accent-light); }
+    .main-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; }
+    .chart-container { position: relative; height: 280px; }
+    .chart-container.tall { height: 340px; }
+    .lead-lag-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem; }
+    .lead-stat { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1rem; text-align: center; }
+    .lead-stat .lag { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; }
+    .lead-stat .corr { font-size: 1.5rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; color: var(--accent-light); }
+    .lead-stat .sig { font-size: 11px; color: var(--success); }
+    .benchmark-bar { margin-bottom: 1rem; }
+    .benchmark-label { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }
+    .benchmark-label .name { color: var(--text-secondary); font-weight: 500; }
+    .benchmark-label .value { font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+    .bar-track { background: var(--bg-primary); border-radius: 4px; height: 8px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 4px; transition: width 1s ease; }
+    .bar-fill.mpsi     { background: linear-gradient(90deg, var(--accent), #818cf8); }
+    .bar-fill.keywords { background: var(--success); }
+    .bar-fill.finbert  { background: var(--warning); }
+    .bar-fill.lm       { background: #8b5cf6; }
+    .bar-fill.vader    { background: var(--text-muted); }
+    .best-badge { background: var(--accent); color: white; font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px; margin-left: 6px; text-transform: uppercase; }
+    .regime-timeline { display: flex; flex-direction: column; gap: .75rem; }
+    .regime-item { display: flex; gap: 1rem; align-items: flex-start; }
+    .regime-dot-col { display: flex; flex-direction: column; align-items: center; min-width: 20px; }
+    .regime-dot { width: 12px; height: 12px; border-radius: 50%; border: 2px solid; flex-shrink: 0; margin-top: 4px; }
+    .regime-dot.hawkish { background: var(--hawkish-bg); border-color: var(--hawkish); }
+    .regime-dot.dovish  { background: var(--dovish-bg);  border-color: var(--dovish); }
+    .regime-dot.neutral { background: var(--neutral-bg); border-color: var(--neutral); }
+    .regime-line { width: 2px; flex: 1; min-height: 24px; background: var(--border); margin: 2px 0; }
+    .regime-content { flex: 1; padding-bottom: .5rem; }
+    .regime-period { font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+    .regime-title { font-size: 13px; font-weight: 600; margin: 2px 0; }
+    .regime-desc { font-size: 12px; color: var(--text-secondary); }
+    .regime-score { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; }
+    .prob-bars { display: flex; flex-direction: column; gap: 8px; margin-top: 1rem; }
+    .prob-row { display: flex; align-items: center; gap: 10px; font-size: 12px; }
+    .prob-label { width: 70px; color: var(--text-secondary); }
+    .prob-track { flex: 1; height: 6px; background: var(--bg-primary); border-radius: 3px; overflow: hidden; }
+    .prob-fill   { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
+    .prob-pct   { width: 42px; text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 11px; }
+    #result-panel { display: none; margin-top: 1.5rem; }
+    .result-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
+    .result-score-display { font-size: 3rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+    @media (max-width:1100px) { .kpi-grid { grid-template-columns: repeat(3,1fr); } .main-grid { grid-template-columns: 1fr; } }
+    @media (max-width:700px)  { .kpi-grid { grid-template-columns: repeat(2,1fr); } }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- HERO -->
+<div class="page" style="padding-bottom:0;">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:2rem;margin-bottom:2rem;flex-wrap:wrap;">
+        <div>
+            <h1 style="font-size:2rem;font-weight:700;line-height:1.2;margin-bottom:.5rem;">
+                Real-Time <span style="background:linear-gradient(135deg,var(--accent-light),#c4b5fd);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Fed Communication</span> Analysis
+            </h1>
+            <p style="color:var(--text-secondary);font-size:15px;max-width:560px;">
+                MPSI quantifies Federal Reserve monetary policy stance from FOMC statements, minutes, and speeches.
+                Validated at <strong style="color:var(--accent-light)">r = 0.689</strong> with Fed Funds Rate,
+                with <strong style="color:var(--accent-light)">2–3 month</strong> predictive lead time.
+            </p>
+        </div>
+        <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;">
+            <a href="/upload" class="btn btn-primary"><i class="fas fa-upload"></i> Analyze Document</a>
+            <a href="/about"  class="btn btn-outline"><i class="fas fa-file-alt"></i> Read Paper</a>
+        </div>
+    </div>
+</div>
+
+<!-- KPI CARDS -->
+<div class="page" style="padding-top:0;padding-bottom:0;">
+    <div class="kpi-grid">
+        <div class="kpi-card accent">
+            <div class="kpi-label"><i class="fas fa-database"></i> Total Analyzed</div>
+            <div class="kpi-value">{{ stats.total_analyzed or 284 }}</div>
+            <div class="kpi-delta">Fed documents 2020–2026</div>
+        </div>
+        <div class="kpi-card accent">
+            <div class="kpi-label"><i class="fas fa-chart-bar"></i> FFR Correlation</div>
+            <div class="kpi-value">0.689</div>
+            <div class="kpi-delta up"><i class="fas fa-arrow-up"></i> p &lt; 0.001 · R² = 0.475</div>
+        </div>
+        <div class="kpi-card accent">
+            <div class="kpi-label"><i class="fas fa-clock"></i> Lead Time</div>
+            <div class="kpi-value">2–3<span style="font-size:1rem;font-weight:400"> mo</span></div>
+            <div class="kpi-delta up">r = 0.853 at lag +3</div>
+        </div>
+        <div class="kpi-card {{ 'hawkish' if stats.avg_mpsi > 5 else ('dovish' if stats.avg_mpsi < -5 else 'neutral') }}">
+            <div class="kpi-label"><i class="fas fa-tachometer-alt"></i> Current MPSI</div>
+            <div class="kpi-value">{{ stats.avg_mpsi or "−18.2" }}</div>
+            <div class="kpi-delta"><span class="tag dovish">Moderately Dovish</span></div>
+        </div>
+        <div class="kpi-card hawkish">
+            <div class="kpi-label"><i class="fas fa-arrow-up"></i> Hawkish Docs</div>
+            <div class="kpi-value">{{ stats.hawkish_count or 0 }}</div>
+            <div class="kpi-delta">Tightening bias</div>
+        </div>
+        <div class="kpi-card dovish">
+            <div class="kpi-label"><i class="fas fa-arrow-down"></i> Dovish Docs</div>
+            <div class="kpi-value">{{ stats.dovish_count or 0 }}</div>
+            <div class="kpi-delta">Easing bias</div>
+        </div>
+    </div>
+</div>
+
+<!-- MAIN GRID -->
+<div class="page" style="padding-top:0;">
+<div class="main-grid">
+
+    <!-- LEFT COLUMN -->
+    <div style="display:flex;flex-direction:column;gap:1.5rem;">
+
+        <!-- Time Series Chart -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title"><i class="fas fa-chart-line"></i> MPSI Time Series 2020–2026</span>
+                <span style="font-size:11px;color:var(--text-muted);">vs Fed Funds Rate</span>
+            </div>
+            <div class="card-body">
+                <div class="chart-container tall"><canvas id="timeSeriesChart"></canvas></div>
+                <div style="display:flex;gap:1rem;margin-top:1rem;flex-wrap:wrap;">
+                    <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted);">
+                        <div style="width:12px;height:3px;background:var(--dovish);border-radius:2px;"></div> MPSI
+                    </div>
+                    <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted);">
+                        <div style="width:12px;height:3px;background:var(--warning);border-radius:2px;"></div> Fed Funds Rate
+                    </div>
+                    <div style="display:flex;align-items:center;gap:6px;font-size:11px;">
+                        <div style="width:8px;height:8px;background:var(--hawkish-bg);border:1px solid var(--hawkish);border-radius:2px;"></div>
+                        <span style="color:var(--hawkish-light)">Hawkish Zone</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:6px;font-size:11px;">
+                        <div style="width:8px;height:8px;background:var(--dovish-bg);border:1px solid var(--dovish);border-radius:2px;"></div>
+                        <span style="color:var(--dovish-light)">Dovish Zone</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lead-Lag Chart -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title"><i class="fas fa-forward"></i> Lead-Lag Predictive Analysis</span>
+                <span style="font-size:11px;color:var(--success);">MPSI leads FFR by 2–3 months</span>
+            </div>
+            <div class="card-body">
+                <div class="chart-container"><canvas id="leadLagChart"></canvas></div>
+                <div class="lead-lag-grid">
+                    <div class="lead-stat">
+                        <div class="lag">Concurrent (lag 0)</div>
+                        <div class="corr">0.689</div>
+                        <div class="sig">p &lt; 0.001 ***</div>
+                    </div>
+                    <div class="lead-stat" style="border-color:var(--accent);">
+                        <div class="lag">MPSI leads +3 months</div>
+                        <div class="corr" style="color:var(--success);">0.853</div>
+                        <div class="sig">p &lt; 0.001 *** · Peak</div>
+                    </div>
+                    <div class="lead-stat">
+                        <div class="lag">MPSI leads +6 months</div>
+                        <div class="corr">0.892</div>
+                        <div class="sig">p &lt; 0.001 ***</div>
+                    </div>
+                    <div class="lead-stat">
+                        <div class="lag">FFR leads −6 months</div>
+                        <div class="corr" style="color:var(--text-muted);">0.194</div>
+                        <div class="sig" style="color:var(--text-muted);">Lagging (weak)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Benchmark Comparison + Year Table -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title"><i class="fas fa-trophy"></i> Benchmark Comparison</span>
+                <span style="font-size:11px;color:var(--text-muted);">Correlation with Fed Funds Rate</span>
+            </div>
+            <div class="card-body">
+                <div class="benchmark-bar">
+                    <div class="benchmark-label">
+                        <span class="name">MPSI Hybrid <span class="best-badge">BEST</span></span>
+                        <span class="value" style="color:var(--accent-light);">r = 0.689</span>
+                    </div>
+                    <div class="bar-track"><div class="bar-fill mpsi" style="width:68.9%"></div></div>
+                </div>
+                <div class="benchmark-bar">
+                    <div class="benchmark-label"><span class="name">Keywords Only</span><span class="value" style="color:var(--success);">r = 0.621</span></div>
+                    <div class="bar-track"><div class="bar-fill keywords" style="width:62.1%"></div></div>
+                </div>
+                <div class="benchmark-bar">
+                    <div class="benchmark-label"><span class="name">Generic FinBERT</span><span class="value" style="color:var(--warning);">r = 0.587</span></div>
+                    <div class="bar-track"><div class="bar-fill finbert" style="width:58.7%"></div></div>
+                </div>
+                <div class="benchmark-bar">
+                    <div class="benchmark-label"><span class="name">Loughran-McDonald</span><span class="value" style="color:#a78bfa;">r = 0.482</span></div>
+                    <div class="bar-track"><div class="bar-fill lm" style="width:48.2%"></div></div>
+                </div>
+                <div class="benchmark-bar">
+                    <div class="benchmark-label"><span class="name">VADER Sentiment</span><span class="value" style="color:var(--text-muted);">r = 0.413</span></div>
+                    <div class="bar-track"><div class="bar-fill vader" style="width:41.3%"></div></div>
+                </div>
+                <div style="margin-top:1.5rem;">
+                    <div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:.75rem;">MPSI Summary by Year</div>
+                    <table class="stats-table">
+                        <thead><tr><th>Year</th><th>N</th><th>Mean MPSI</th><th>SD</th><th>Stance</th></tr></thead>
+                        <tbody>
+                            <tr><td>2020</td><td>48</td><td class="mono dovish-text">-26.8</td><td>10.2</td><td><span class="tag dovish">Dovish</span></td></tr>
+                            <tr><td>2021</td><td>42</td><td class="mono dovish-text">-19.7</td><td>9.5</td><td><span class="tag dovish">Dovish</span></td></tr>
+                            <tr><td>2022</td><td>48</td><td class="mono hawkish-text">+5.8</td><td>12.8</td><td><span class="tag hawkish">Hawkish</span></td></tr>
+                            <tr><td>2023</td><td>52</td><td class="mono hawkish-text">+13.4</td><td>8.7</td><td><span class="tag hawkish">Hawkish</span></td></tr>
+                            <tr><td>2024</td><td>48</td><td class="mono dovish-text">-10.3</td><td>9.1</td><td><span class="tag dovish">Dovish</span></td></tr>
+                            <tr><td>2025</td><td>38</td><td class="mono dovish-text">-13.6</td><td>7.8</td><td><span class="tag dovish">Dovish</span></td></tr>
+                            <tr><td>2026</td><td>8</td><td class="mono dovish-text">-18.2</td><td>12.4</td><td><span class="tag dovish">Dovish</span></td></tr>
+                            <tr style="font-weight:600;"><td><strong>Overall</strong></td><td><strong>284</strong></td><td class="mono"><strong>-7.9</strong></td><td><strong>17.6</strong></td><td><span class="tag neutral">Neutral</span></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div style="display:flex;flex-direction:column;gap:1.5rem;">
+
+        <!-- Live Analysis Panel -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title"><i class="fas fa-bolt"></i> Live Analysis</span>
+                <span style="font-size:11px;color:var(--success);">&lt; 2 sec</span>
+            </div>
+            <div class="card-body">
+                <form id="quickAnalyzeForm" enctype="multipart/form-data">
+                    <div class="upload-zone" id="dropZone">
+                        <input type="file" name="file" id="fileInput" accept=".txt,.pdf,.doc,.docx">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <h3>Drop Fed document here</h3>
+                        <p>FOMC Statement, Minutes, or Speech<br>.txt · .pdf · .doc · .docx</p>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width:100%;margin-top:1rem;justify-content:center;">
+                        <i class="fas fa-brain"></i> Calculate MPSI
+                    </button>
+                </form>
+                <div id="result-panel">
+                    <div class="result-header">
+                        <div>
+                            <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">MPSI Score</div>
+                            <div class="result-score-display" id="resultScore">—</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div id="resultStanceBadge"></div>
+                            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;" id="resultFile"></div>
+                        </div>
+                    </div>
+                    <div class="prob-bars">
+                        <div class="prob-row">
+                            <span class="prob-label hawkish-text">Hawkish</span>
+                            <div class="prob-track"><div class="prob-fill" id="hawkishBar" style="background:var(--hawkish);"></div></div>
+                            <span class="prob-pct hawkish-text" id="hawkishPct">—</span>
+                        </div>
+                        <div class="prob-row">
+                            <span class="prob-label neutral-text">Neutral</span>
+                            <div class="prob-track"><div class="prob-fill" id="neutralBar" style="background:var(--neutral);"></div></div>
+                            <span class="prob-pct neutral-text" id="neutralPct">—</span>
+                        </div>
+                        <div class="prob-row">
+                            <span class="prob-label dovish-text">Dovish</span>
+                            <div class="prob-track"><div class="prob-fill" id="dovishBar" style="background:var(--dovish);"></div></div>
+                            <span class="prob-pct dovish-text" id="dovishPct">—</span>
+                        </div>
+                    </div>
+                    <a href="#" id="fullResultsLink" class="btn btn-outline" style="margin-top:1rem;width:100%;justify-content:center;">
+                        <i class="fas fa-expand-alt"></i> Full Results
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Policy Regime Timeline -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title"><i class="fas fa-stream"></i> Policy Regime Timeline</span>
+            </div>
+            <div class="card-body">
+                <div class="regime-timeline">
+                    <div class="regime-item">
+                        <div class="regime-dot-col"><div class="regime-dot dovish"></div><div class="regime-line"></div></div>
+                        <div class="regime-content">
+                            <div class="regime-period">2020 Q1–Q2</div>
+                            <div class="regime-title dovish-text">COVID-19 Emergency</div>
+                            <div class="regime-desc">MPSI → -48.2 · 3-5 days before emergency cuts</div>
+                            <div class="regime-score dovish-text">MPSI: -48.2</div>
+                        </div>
+                    </div>
+                    <div class="regime-item">
+                        <div class="regime-dot-col"><div class="regime-dot dovish"></div><div class="regime-line"></div></div>
+                        <div class="regime-content">
+                            <div class="regime-period">2020 Q3 – 2021</div>
+                            <div class="regime-title dovish-text">Accommodative Period</div>
+                            <div class="regime-desc">MPSI stabilized -25 to -15 · Near-zero rates maintained</div>
+                            <div class="regime-score dovish-text">MPSI: -23.3 avg</div>
+                        </div>
+                    </div>
+                    <div class="regime-item">
+                        <div class="regime-dot-col"><div class="regime-dot neutral"></div><div class="regime-line"></div></div>
+                        <div class="regime-content">
+                            <div class="regime-period">2022 Q1</div>
+                            <div class="regime-title neutral-text">Hawkish Pivot</div>
+                            <div class="regime-desc">MPSI signaled hawkish 4-6 mo before Mar 2022 hike</div>
+                            <div class="regime-score neutral-text">MPSI: +5.8 avg</div>
+                        </div>
+                    </div>
+                    <div class="regime-item">
+                        <div class="regime-dot-col"><div class="regime-dot hawkish"></div><div class="regime-line"></div></div>
+                        <div class="regime-content">
+                            <div class="regime-period">2022–2023</div>
+                            <div class="regime-title hawkish-text">Aggressive Tightening</div>
+                            <div class="regime-desc">508 bps of hikes · Fastest since 1980s · Peak MPSI +25</div>
+                            <div class="regime-score hawkish-text">MPSI: +13.4 peak avg</div>
+                        </div>
+                    </div>
+                    <div class="regime-item">
+                        <div class="regime-dot-col"><div class="regime-dot dovish"></div></div>
+                        <div class="regime-content">
+                            <div class="regime-period">2024–2026</div>
+                            <div class="regime-title dovish-text">Normalization</div>
+                            <div class="regime-desc">MPSI dovish 6 mo before Dec 2024 first cut</div>
+                            <div class="regime-score dovish-text">MPSI: -13.1 avg</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Doc Type Chart -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title"><i class="fas fa-file-alt"></i> MPSI by Document Type</span>
+            </div>
+            <div class="card-body">
+                <div class="chart-container" style="height:200px;"><canvas id="docTypeChart"></canvas></div>
+                <table class="stats-table" style="margin-top:1rem;">
+                    <thead><tr><th>Document</th><th>N</th><th>Mean MPSI</th><th>Stance</th></tr></thead>
+                    <tbody>
+                        <tr><td>FOMC Minutes</td><td>48</td><td class="mono dovish-text">-12.8</td><td><span class="tag dovish">Dovish</span></td></tr>
+                        <tr><td>Chair Speeches</td><td>38</td><td class="mono dovish-text">-9.2</td><td><span class="tag dovish">Dovish</span></td></tr>
+                        <tr><td>FOMC Statements</td><td>96</td><td class="mono">-3.2</td><td><span class="tag neutral">Neutral</span></td></tr>
+                        <tr><td>Economic Outlook</td><td>102</td><td class="mono">-1.8</td><td><span class="tag neutral">Neutral</span></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Model Diagnostics -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title"><i class="fas fa-microscope"></i> Model Diagnostics</span>
+            </div>
+            <div class="card-body">
+                <table class="stats-table">
+                    <tbody>
+                        <tr><td>Pearson r (MPSI vs FFR)</td><td class="mono accent-text">0.689***</td></tr>
+                        <tr><td>R-squared</td><td class="mono accent-text">0.475</td></tr>
+                        <tr><td>Regression: FFR = β₀ + β₁·MPSI</td><td class="mono">3.320 + 0.102x</td></tr>
+                        <tr><td>Breusch-Pagan (homoscedasticity)</td><td class="mono success-text">p = 0.14 ✓</td></tr>
+                        <tr><td>Shapiro-Wilk (normality)</td><td class="mono success-text">W = 0.976 ✓</td></tr>
+                        <tr><td>Durbin-Watson</td><td class="mono success-text">1.89 ✓</td></tr>
+                        <tr><td>FinBERT Test Accuracy</td><td class="mono success-text">84.2%</td></tr>
+                        <tr><td>FinBERT Macro F1</td><td class="mono success-text">0.833</td></tr>
+                        <tr><td>Processing Speed</td><td class="mono">&lt; 2 sec/doc</td></tr>
+                        <tr><td>Sample Size</td><td class="mono">284 docs · 74 months</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const timeSeriesData = {{ time_series | tojson if time_series else 'null' }};
+Chart.defaults.color = '#8899bb';
+Chart.defaults.borderColor = '#2a3650';
+Chart.defaults.font.family = "'Inter', sans-serif";
+
+// 1. TIME SERIES
+(function(){
+    const ctx = document.getElementById('timeSeriesChart').getContext('2d');
+    const months = ['Jan-20','Mar-20','Jun-20','Sep-20','Dec-20','Mar-21','Jun-21','Sep-21','Dec-21','Mar-22','Jun-22','Sep-22','Dec-22','Mar-23','Jun-23','Sep-23','Dec-23','Mar-24','Jun-24','Sep-24','Dec-24','Mar-25','Jun-25','Sep-25','Dec-25','Feb-26'];
+    const mpsiValues = [-15,-48,-35,-28,-25,-22,-18,-10,-5,+2,+12,+20,+24,+23,+25,+22,+18,+10,+3,-8,-15,-13,-15,-14,-16,-18];
+    const ffrValues  = [1.58,0.05,0.05,0.05,0.05,0.05,0.05,0.05,0.05,0.05,1.0,2.5,4.0,4.75,5.0,5.25,5.33,5.33,5.33,5.0,4.5,4.25,4.0,3.75,3.5,3.25];
+    const labels = (timeSeriesData && timeSeriesData.dates) ? timeSeriesData.dates : months;
+    const mpsi   = (timeSeriesData && timeSeriesData.mpsi_scores) ? timeSeriesData.mpsi_scores : mpsiValues;
+    new Chart(ctx, {
+        type: 'line',
+        data: { labels, datasets: [
+            { label:'MPSI', data:mpsi, borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,0.08)', borderWidth:2.5, pointRadius:3, tension:0.35, fill:true, yAxisID:'y' },
+            { label:'Fed Funds Rate (%)', data:ffrValues, borderColor:'#f59e0b', borderWidth:2, borderDash:[5,3], pointRadius:2, tension:0.2, fill:false, yAxisID:'y1' }
+        ]},
+        options: {
+            responsive:true, maintainAspectRatio:false,
+            interaction:{mode:'index',intersect:false},
+            plugins:{
+                legend:{position:'top',labels:{boxWidth:12,font:{size:11}}},
+                annotation:{annotations:{
+                    covid:{type:'line',xMin:'Mar-20',xMax:'Mar-20',borderColor:'rgba(239,68,68,0.5)',borderWidth:1.5,borderDash:[4,3],label:{display:true,content:'COVID Emergency',position:'start',font:{size:9},color:'#fca5a5',backgroundColor:'rgba(239,68,68,0.15)'}},
+                    firstHike:{type:'line',xMin:'Mar-22',xMax:'Mar-22',borderColor:'rgba(239,68,68,0.5)',borderWidth:1.5,borderDash:[4,3],label:{display:true,content:'First Rate Hike',position:'start',font:{size:9},color:'#fca5a5',backgroundColor:'rgba(239,68,68,0.15)'}},
+                    firstCut:{type:'line',xMin:'Dec-24',xMax:'Dec-24',borderColor:'rgba(59,130,246,0.5)',borderWidth:1.5,borderDash:[4,3],label:{display:true,content:'First Rate Cut',position:'end',font:{size:9},color:'#93c5fd',backgroundColor:'rgba(59,130,246,0.15)'}},
+                    zeroLine:{type:'line',yMin:0,yMax:0,borderColor:'rgba(107,114,128,0.4)',borderWidth:1,borderDash:[3,3]}
+                }}
+            },
+            scales:{
+                x:{grid:{color:'rgba(42,54,80,0.5)'},ticks:{maxRotation:45,font:{size:10}}},
+                y:{type:'linear',position:'left',grid:{color:'rgba(42,54,80,0.5)'},title:{display:true,text:'MPSI Score',font:{size:11}},min:-60,max:40},
+                y1:{type:'linear',position:'right',grid:{drawOnChartArea:false},title:{display:true,text:'FFR (%)',font:{size:11}},min:0,max:6}
+            }
+        }
+    });
+})();
+
+// 2. LEAD-LAG
+(function(){
+    const ctx = document.getElementById('leadLagChart').getContext('2d');
+    const lags  = ['-6','-5','-4','-3','-2','-1','0','+1','+2','+3','+4','+5','+6'];
+    const corrs = [0.194,0.231,0.298,0.363,0.421,0.556,0.689,0.745,0.810,0.853,0.874,0.882,0.892];
+    new Chart(ctx, {
+        type:'bar',
+        data:{labels:lags,datasets:[{label:'Correlation',data:corrs,backgroundColor:corrs.map((_,i)=>i>=6?'rgba(99,102,241,0.8)':'rgba(107,114,128,0.5)'),borderColor:corrs.map((_,i)=>i>=6?'#6366f1':'#374151'),borderWidth:1,borderRadius:4}]},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`r = ${c.parsed.y.toFixed(3)}`,title:c=>{const l=parseInt(c[0].label);return l>0?`MPSI leads FFR by ${l} month${l>1?'s':''}`:l<0?`FFR leads MPSI by ${Math.abs(l)} month${Math.abs(l)>1?'s':''}}`:'Concurrent';}}}},scales:{x:{grid:{display:false},title:{display:true,text:'Lag (months) · Positive = MPSI leads FFR',font:{size:11}}},y:{grid:{color:'rgba(42,54,80,0.5)'},title:{display:true,text:'Pearson r',font:{size:11}},min:0,max:1}}}
+    });
+})();
+
+// 3. DOC TYPE
+(function(){
+    const ctx = document.getElementById('docTypeChart').getContext('2d');
+    new Chart(ctx,{type:'bar',data:{labels:['FOMC Minutes','Chair Speeches','FOMC Statements','Econ. Outlook'],datasets:[{label:'Mean MPSI',data:[-12.8,-9.2,-3.2,-1.8],backgroundColor:['rgba(59,130,246,0.7)','rgba(59,130,246,0.5)','rgba(107,114,128,0.5)','rgba(107,114,128,0.4)'],borderColor:['#3b82f6','#3b82f6','#6b7280','#6b7280'],borderWidth:1,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{grid:{color:'rgba(42,54,80,0.5)'},title:{display:true,text:'Mean MPSI',font:{size:11}}},y:{grid:{display:false}}}}});
+})();
+
+// DRAG & DROP
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+dropZone.addEventListener('dragover', e=>{ e.preventDefault(); dropZone.classList.add('dragging'); });
+dropZone.addEventListener('dragleave', ()=>dropZone.classList.remove('dragging'));
+dropZone.addEventListener('drop', e=>{ e.preventDefault(); dropZone.classList.remove('dragging'); const f=e.dataTransfer.files; if(f.length){fileInput.files=f; dropZone.querySelector('h3').textContent=f[0].name;} });
+fileInput.addEventListener('change', ()=>{ if(fileInput.files.length) dropZone.querySelector('h3').textContent=fileInput.files[0].name; });
+
+// QUICK ANALYZE AJAX
+document.getElementById('quickAnalyzeForm').addEventListener('submit', async function(e){
+    e.preventDefault();
+    const btn=this.querySelector('button[type="submit"]');
+    const orig=btn.innerHTML;
+    btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Analyzing...';
+    btn.disabled=true;
+    try {
+        const fd=new FormData(this);
+        const resp=await fetch('/api/analyze',{method:'POST',body:fd});
+        const data=await resp.json();
+        if(data.success){
+            const r=data.result;
+            document.getElementById('result-panel').style.display='block';
+            const sc=document.getElementById('resultScore');
+            sc.textContent=r.mpsi_score;
+            sc.className='result-score-display '+(r.stance==='Hawkish'?'hawkish-text':r.stance==='Dovish'?'dovish-text':'neutral-text');
+            document.getElementById('resultStanceBadge').innerHTML=`<span class="tag ${r.stance.toLowerCase()}">${r.stance}</span>`;
+            document.getElementById('resultFile').textContent=r.filename||'';
+            const s=r.mpsi_score;
+            let hp=0,dp=0,np=0;
+            if(s>0){hp=Math.min(s*2,95);np=100-hp;}else{dp=Math.min(Math.abs(s)*2,95);np=100-dp;}
+            document.getElementById('hawkishBar').style.width=hp+'%';
+            document.getElementById('neutralBar').style.width=np+'%';
+            document.getElementById('dovishBar').style.width=dp+'%';
+            document.getElementById('hawkishPct').textContent=hp.toFixed(1)+'%';
+            document.getElementById('neutralPct').textContent=np.toFixed(1)+'%';
+            document.getElementById('dovishPct').textContent=dp.toFixed(1)+'%';
+            document.getElementById('fullResultsLink').href='/results/'+(r.analysis_id||'');
+        } else { alert('Error: '+(data.error||'Unknown error')); }
+    } catch(err){ alert('Error analyzing document. Please try again.'); console.error(err); }
+    finally { btn.innerHTML=orig; btn.disabled=false; }
+});
+</script>
+{% endblock %}

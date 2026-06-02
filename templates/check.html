@@ -1,0 +1,694 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block head %}
+<style>
+/* ── KPI GRID ── */
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: .9rem;
+    margin-bottom: 1.5rem;
+}
+.kpi {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.1rem 1.2rem;
+    position: relative;
+    overflow: hidden;
+    transition: transform .2s, box-shadow .2s;
+}
+.kpi::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 2px;
+}
+.kpi.accent::before  { background: linear-gradient(90deg,var(--accent),transparent); }
+.kpi.green::before   { background: linear-gradient(90deg,var(--green),transparent); }
+.kpi.hawk::before    { background: linear-gradient(90deg,var(--hawk),transparent); }
+.kpi.dove::before    { background: linear-gradient(90deg,var(--dove),transparent); }
+.kpi.warn::before    { background: linear-gradient(90deg,var(--warn),transparent); }
+.kpi:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(0,0,0,.3); }
+.kpi-label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .7px; margin-bottom: .3rem; }
+.kpi-val   { font-size: 1.9rem; font-weight: 800; font-family: 'JetBrains Mono',monospace; line-height: 1.1; }
+.kpi-val.c-accent { color: var(--accent2); }
+.kpi-val.c-green  { color: #6ee7b7; }
+.kpi-val.c-hawk   { color: #fca5a5; }
+.kpi-val.c-dove   { color: #93c5fd; }
+.kpi-val.c-warn   { color: #fcd34d; }
+.kpi-sub { font-size: 10px; color: var(--muted); margin-top: .25rem; }
+
+/* ── MAIN GRID ── */
+.main-grid {
+    display: grid;
+    grid-template-columns: 1.65fr 1fr;
+    gap: 1.25rem;
+}
+.left-col  { display: flex; flex-direction: column; gap: 1.25rem; }
+.right-col { display: flex; flex-direction: column; gap: 1.25rem; }
+
+/* ── CHART BOXES ── */
+.chart-wrap { position: relative; }
+.chart-wrap.h300 { height: 300px; }
+.chart-wrap.h240 { height: 240px; }
+.chart-wrap.h200 { height: 200px; }
+
+/* ── BENCHMARK BARS ── */
+.bench-item { margin-bottom: .85rem; }
+.bench-item:last-child { margin-bottom: 0; }
+.bench-top {
+    display: flex; justify-content: space-between;
+    align-items: center; margin-bottom: 4px;
+    font-size: 12px;
+}
+.bench-name { color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.bench-val  { font-family: 'JetBrains Mono',monospace; font-weight: 700; }
+.bench-bar  { background: var(--bg2); border-radius: 4px; height: 6px; }
+.bench-fill { height: 100%; border-radius: 4px; transition: width 1s ease; }
+.best-tag {
+    background: var(--accent); color: #fff;
+    font-size: 9px; font-weight: 700;
+    padding: 1px 6px; border-radius: 3px;
+    text-transform: uppercase; letter-spacing: .3px;
+}
+
+/* ── REGIME TIMELINE ── */
+.regime-item {
+    display: flex; gap: .9rem; align-items: flex-start;
+    padding: .7rem 0;
+    border-bottom: 1px solid rgba(36,48,72,.6);
+}
+.regime-item:last-child { border: none; padding-bottom: 0; }
+.regime-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    flex-shrink: 0; margin-top: 5px;
+    border: 2px solid;
+}
+.regime-dot.hawk { background: var(--hawk-bg); border-color: var(--hawk); }
+.regime-dot.dove { background: var(--dove-bg); border-color: var(--dove); }
+.regime-dot.neut { background: rgba(107,114,128,.1); border-color: #6b7280; }
+.regime-period { font-size: 9px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+.regime-title  { font-size: 13px; font-weight: 600; margin: 2px 0 1px; }
+.regime-desc   { font-size: 11px; color: var(--muted); line-height: 1.4; }
+.regime-score  { font-family: 'JetBrains Mono',monospace; font-size: 11px; font-weight: 700; margin-top: 2px; }
+
+/* ── STATS TABLE ── */
+.stat-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.stat-table td { padding: .45rem .5rem; border-bottom: 1px solid rgba(36,48,72,.4); }
+.stat-table td:first-child { color: var(--muted); }
+.stat-table td:last-child  { text-align: right; font-family: 'JetBrains Mono',monospace; font-weight: 600; color: var(--accent2); }
+.stat-table tr:last-child td { border: none; }
+
+/* ── RECENT LIST ── */
+.recent-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: .6rem 0;
+    border-bottom: 1px solid rgba(36,48,72,.4);
+    gap: .75rem;
+}
+.recent-item:last-child { border: none; padding-bottom: 0; }
+.recent-name { font-size: 12px; font-weight: 500; color: var(--text); }
+.recent-meta { font-size: 10px; color: var(--muted); margin-top: 1px; }
+.recent-score {
+    font-family: 'JetBrains Mono',monospace;
+    font-size: 14px; font-weight: 700;
+    flex-shrink: 0;
+}
+
+/* ── LEGEND ── */
+.legend { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: .75rem; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
+.legend-line { width: 16px; height: 2px; border-radius: 2px; }
+.legend-dash { width: 16px; height: 0; border-top: 2px dashed; }
+
+/* ── SESSION EMPTY ── */
+.empty-state { text-align: center; padding: 2rem 1.5rem; }
+.empty-state i { font-size: 2.5rem; color: var(--border); display: block; margin-bottom: .75rem; }
+.empty-state p { font-size: 13px; color: var(--muted); margin-bottom: 1rem; }
+
+@media(max-width:1100px) { .kpi-grid { grid-template-columns: repeat(3,1fr); } }
+@media(max-width:900px)  { .main-grid { grid-template-columns: 1fr; } .kpi-grid { grid-template-columns: repeat(2,1fr); } }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- HERO -->
+<div style="margin-bottom:1.5rem;display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
+    <div>
+        <h1 style="font-size:1.65rem;font-weight:800;margin-bottom:.35rem;">
+            Federal Reserve
+            <span style="background:linear-gradient(135deg,var(--accent2),#c4b5fd);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
+                Monetary Policy
+            </span>
+            Sentiment Index
+        </h1>
+        <p style="color:var(--muted);font-size:13px;max-width:620px;">
+            Real-time MPSI quantifies Fed communication stance from FOMC statements, minutes &amp; speeches.
+            Validated at <strong style="color:var(--accent2)">r&nbsp;=&nbsp;0.689</strong> with the Federal Funds Rate,
+            predicting policy shifts <strong style="color:var(--accent2)">2–3 months</strong> in advance.
+        </p>
+    </div>
+    <div style="display:flex;gap:.6rem;flex-shrink:0;">
+        <a href="/upload"  class="btn btn-primary"><i class="fas fa-upload"></i> Upload Document</a>
+        <a href="/history" class="btn btn-ghost"><i class="fas fa-database"></i> Historical Data</a>
+    </div>
+</div>
+
+<!-- KPI ROW -->
+<div class="kpi-grid">
+    <div class="kpi accent">
+        <div class="kpi-label"><i class="fas fa-database"></i> Total Documents</div>
+        <div class="kpi-val c-accent">119</div>
+        <div class="kpi-sub">FOMC Statements · Minutes · Speeches</div>
+    </div>
+    <div class="kpi green">
+        <div class="kpi-label"><i class="fas fa-chart-bar"></i> FFR Correlation</div>
+        <div class="kpi-val c-green">0.689</div>
+        <div class="kpi-sub">p &lt; 0.001 · R² = 0.475</div>
+    </div>
+    <div class="kpi accent">
+        <div class="kpi-label"><i class="fas fa-forward"></i> Predictive Lead</div>
+        <div class="kpi-val c-accent">2–3 <span style="font-size:1rem;font-weight:400">mo</span></div>
+        <div class="kpi-sub">Peak r = 0.721 at lag +3</div>
+    </div>
+    {% if stats and stats.total_analyzed > 0 %}
+    <div class="kpi {{ 'hawk' if stats.avg_mpsi > 10 else ('dove' if stats.avg_mpsi < -10 else 'warn') }}">
+        <div class="kpi-label"><i class="fas fa-tachometer-alt"></i> Session Avg MPSI</div>
+        <div class="kpi-val {{ 'c-hawk' if stats.avg_mpsi > 10 else ('c-dove' if stats.avg_mpsi < -10 else 'c-warn') }}">
+            {{ stats.avg_mpsi }}
+        </div>
+        <div class="kpi-sub">{{ stats.total_analyzed }} document(s) analyzed</div>
+    </div>
+    <div class="kpi warn">
+        <div class="kpi-label"><i class="fas fa-pie-chart"></i> Stance Split</div>
+        <div class="kpi-val c-warn" style="font-size:1.1rem;padding-top:.3rem;">
+            <span style="color:#fca5a5;">H:{{ stats.hawkish_count }}</span>
+            <span style="color:var(--muted);font-size:.8rem;"> / </span>
+            <span style="color:#6ee7b7;">N:{{ stats.neutral_count }}</span>
+            <span style="color:var(--muted);font-size:.8rem;"> / </span>
+            <span style="color:#93c5fd;">D:{{ stats.dovish_count }}</span>
+        </div>
+        <div class="kpi-sub">Hawkish / Neutral / Dovish</div>
+    </div>
+    {% else %}
+    <div class="kpi warn">
+        <div class="kpi-label"><i class="fas fa-tachometer-alt"></i> Current Stance</div>
+        <div class="kpi-val c-dove">–18.2</div>
+        <div class="kpi-sub"><span class="badge badge-dove">Moderately Dovish</span></div>
+    </div>
+    <div class="kpi dove">
+        <div class="kpi-label"><i class="fas fa-calendar-alt"></i> Coverage</div>
+        <div class="kpi-val c-accent" style="font-size:1.1rem;padding-top:.3rem;">2020–2026</div>
+        <div class="kpi-sub">Jan 2020 → Feb 2026</div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- MAIN GRID -->
+<div class="main-grid">
+
+    <!-- ═══ LEFT COLUMN ═══ -->
+    <div class="left-col">
+
+        <!-- TIME SERIES CHART -->
+        <div class="card">
+            <div class="card-head">
+                <span class="card-title"><i class="fas fa-chart-line"></i> MPSI vs Federal Funds Rate — 2020 to 2026</span>
+                <span style="font-size:10px;color:var(--muted);">Dual axis · Policy events annotated</span>
+            </div>
+            <div class="card-body">
+                <div class="chart-wrap h300">
+                    <canvas id="tsChart"></canvas>
+                </div>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-line" style="background:#3b82f6;"></div>
+                        MPSI Score (left axis)
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dash" style="border-color:#f59e0b;"></div>
+                        Fed Funds Rate % (right axis)
+                    </div>
+                    <div class="legend-item">
+                        <div style="width:10px;height:10px;background:rgba(239,68,68,.2);border-radius:2px;"></div>
+                        Hawkish zone
+                    </div>
+                    <div class="legend-item">
+                        <div style="width:10px;height:10px;background:rgba(59,130,246,.15);border-radius:2px;"></div>
+                        Dovish zone
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LEAD-LAG CHART -->
+        <div class="card">
+            <div class="card-head">
+                <span class="card-title"><i class="fas fa-forward"></i> Lead-Lag Analysis — MPSI Leads Fed Action</span>
+                <span style="font-size:10px;color:var(--green);font-weight:600;">Peak r = 0.721 at lag +3 months</span>
+            </div>
+            <div class="card-body">
+                <div class="chart-wrap h240">
+                    <canvas id="lagChart"></canvas>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-top:1rem;">
+                    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:.8rem;text-align:center;">
+                        <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;">FFR leads (lagging)</div>
+                        <div class="mono" style="font-size:1.3rem;font-weight:700;color:var(--muted);">0.194</div>
+                        <div style="font-size:9px;color:var(--muted);">lag –6 months</div>
+                    </div>
+                    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:.8rem;text-align:center;">
+                        <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;">Concurrent</div>
+                        <div class="mono" style="font-size:1.3rem;font-weight:700;color:var(--accent2);">0.689</div>
+                        <div style="font-size:9px;color:var(--muted);">lag 0 · p &lt; 0.001</div>
+                    </div>
+                    <div style="background:var(--bg2);border:1px solid var(--accent);border-radius:8px;padding:.8rem;text-align:center;">
+                        <div style="font-size:9px;color:var(--accent2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;">⭐ MPSI leads</div>
+                        <div class="mono" style="font-size:1.3rem;font-weight:700;color:var(--green);">0.721</div>
+                        <div style="font-size:9px;color:var(--green);">lag +3 months · PEAK</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BENCHMARK COMPARISON -->
+        <div class="card">
+            <div class="card-head">
+                <span class="card-title"><i class="fas fa-trophy"></i> Benchmark Comparison — Pearson r with Fed Funds Rate</span>
+                <span style="font-size:10px;color:var(--muted);">MPSI outperforms all baseline methods</span>
+            </div>
+            <div class="card-body">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+                    <div>
+                        {% set benchmarks = [
+                            ('Hybrid MPSI', 0.689, '#6366f1', True),
+                            ('Keywords Only', 0.621, '#10b981', False),
+                            ('Fine-tuned FinBERT', 0.543, '#f59e0b', False),
+                            ('Loughran-McDonald', 0.482, '#8b5cf6', False),
+                            ('VADER', 0.413, '#6b7280', False)
+                        ] %}
+                        {% for name, val, color, best in benchmarks %}
+                        <div class="bench-item">
+                            <div class="bench-top">
+                                <span class="bench-name">
+                                    {{ name }}
+                                    {% if best %}<span class="best-tag">Best</span>{% endif %}
+                                </span>
+                                <span class="bench-val" style="color:{{ color }};">{{ val }}</span>
+                            </div>
+                            <div class="bench-bar">
+                                <div class="bench-fill" style="width:{{ (val/0.75*100)|round }}%;background:{{ color }};"></div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="chart-wrap h200">
+                        <canvas id="benchChart"></canvas>
+                    </div>
+                </div>
+                <div style="margin-top:1rem;padding:.75rem;background:rgba(99,102,241,.07);border:1px solid rgba(99,102,241,.2);border-radius:8px;font-size:11px;color:var(--muted);">
+                    <i class="fas fa-info-circle" style="color:var(--accent2);margin-right:5px;"></i>
+                    MPSI exceeds the next best method (Keywords Only) by
+                    <strong style="color:var(--text);">10.9%</strong> and outperforms VADER by
+                    <strong style="color:var(--text);">66.8%</strong>.
+                    R² improvement over Taylor Rule models estimated on same period: <strong style="color:var(--text);">+24.2%</strong>.
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ═══ RIGHT COLUMN ═══ -->
+    <div class="right-col">
+
+        <!-- UPLOAD CTA -->
+        <div class="card" style="border-color:rgba(99,102,241,.4);">
+            <div class="card-head">
+                <span class="card-title"><i class="fas fa-bolt"></i> Analyze a Fed Document</span>
+                <span style="font-size:10px;color:var(--green);font-weight:600;display:flex;align-items:center;gap:4px;">
+                    <span style="width:6px;height:6px;background:var(--green);border-radius:50%;display:inline-block;"></span>
+                    LIVE
+                </span>
+            </div>
+            <div class="card-body" style="text-align:center;padding:1.5rem;">
+                <div style="width:52px;height:52px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.3);border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto .9rem;">
+                    <i class="fas fa-file-upload" style="font-size:1.4rem;color:var(--accent2);"></i>
+                </div>
+                <p style="font-size:12px;color:var(--muted);margin-bottom:1.1rem;line-height:1.6;">
+                    Upload any FOMC statement, minutes, or Fed chair speech.
+                    Get instant <strong style="color:var(--text)">MPSI score</strong>,
+                    policy stance, keyword breakdown and market implication.
+                </p>
+                <a href="/upload" class="btn btn-primary" style="width:100%;justify-content:center;margin-bottom:.5rem;">
+                    <i class="fas fa-upload"></i> Upload & Analyze
+                </a>
+                <a href="/history" class="btn btn-ghost" style="width:100%;justify-content:center;">
+                    <i class="fas fa-chart-area"></i> View Historical Data
+                </a>
+            </div>
+        </div>
+
+        <!-- SCORE GUIDE -->
+        <div class="card">
+            <div class="card-head">
+                <span class="card-title"><i class="fas fa-sliders-h"></i> MPSI Score Interpretation</span>
+            </div>
+            <div class="card-body" style="padding:.9rem 1.25rem;">
+                {% set scale = [
+                    ('+50 to +100', 'Strongly Hawkish',   '#ef4444', 'Rate HIKE imminent · Fed inflation-fighting mode'),
+                    ('+20 to +50',  'Moderately Hawkish',  '#f97316', 'Hike likely within 1–2 meetings'),
+                    ('–20 to +20',  'Neutral',             '#6b7280', 'On hold · Watch for pivot signals'),
+                    ('–50 to –20',  'Moderately Dovish',   '#3b82f6', 'Cut possible within 1–2 meetings'),
+                    ('–100 to –50', 'Strongly Dovish',     '#1d4ed8', 'Rate CUT / emergency easing signalled')
+                ] %}
+                {% for range, label, color, note in scale %}
+                <div style="display:flex;gap:.75rem;align-items:center;padding:.45rem 0;border-bottom:1px solid rgba(36,48,72,.4);">
+                    <div style="width:4px;height:36px;background:{{ color }};border-radius:2px;flex-shrink:0;"></div>
+                    <div style="flex:1;min-width:0;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <span style="font-size:12px;font-weight:600;color:{{ color }};">{{ label }}</span>
+                            <span class="mono" style="font-size:10px;color:var(--muted);">{{ range }}</span>
+                        </div>
+                        <div style="font-size:10px;color:var(--muted);margin-top:1px;">{{ note }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+                <div style="margin-top:.75rem;font-size:10px;color:var(--muted);padding:.6rem;background:var(--bg2);border-radius:6px;">
+                    <strong style="color:var(--text);">Formula:</strong>
+                    MPSI = 0.70 × Keyword Score + 0.30 × FinBERT Score<br>
+                    Keyword Score = (Hawkish – Dovish) / Total Keywords × 100
+                </div>
+            </div>
+        </div>
+
+        <!-- POLICY REGIME TIMELINE -->
+        <div class="card">
+            <div class="card-head">
+                <span class="card-title"><i class="fas fa-stream"></i> Policy Regime Timeline</span>
+                <span style="font-size:10px;color:var(--muted);">2020–2026</span>
+            </div>
+            <div class="card-body" style="padding:.75rem 1.25rem;">
+                <div class="regime-item">
+                    <div class="regime-dot dove"></div>
+                    <div>
+                        <div class="regime-period">Mar 2020 — Emergency</div>
+                        <div class="regime-title" style="color:#93c5fd;">COVID Emergency Cuts</div>
+                        <div class="regime-desc">0–25 bps in days. MPSI signalled 3–5 days before cuts.</div>
+                        <div class="regime-score" style="color:#93c5fd;">MPSI: –48.2</div>
+                    </div>
+                </div>
+                <div class="regime-item">
+                    <div class="regime-dot dove"></div>
+                    <div>
+                        <div class="regime-period">2020 Q2 → 2021 Q4</div>
+                        <div class="regime-title" style="color:#93c5fd;">Accommodation Era</div>
+                        <div class="regime-desc">Zero lower bound. QE active. MPSI avg –23.3.</div>
+                        <div class="regime-score" style="color:#93c5fd;">MPSI avg: –23.3</div>
+                    </div>
+                </div>
+                <div class="regime-item">
+                    <div class="regime-dot neut"></div>
+                    <div>
+                        <div class="regime-period">Nov 2021 — Pivot Signal</div>
+                        <div class="regime-title" style="color:#d1d5db;">Hawkish Pivot Detected</div>
+                        <div class="regime-desc">MPSI crossed +10 six months before Mar 2022 first hike.</div>
+                        <div class="regime-score" style="color:#d1d5db;">MPSI: +12.4</div>
+                    </div>
+                </div>
+                <div class="regime-item">
+                    <div class="regime-dot hawk"></div>
+                    <div>
+                        <div class="regime-period">Mar 2022 — Dec 2023</div>
+                        <div class="regime-title" style="color:#fca5a5;">Aggressive Tightening</div>
+                        <div class="regime-desc">11 hikes · +508 bps · Fastest since 1980s. MPSI peak +25.</div>
+                        <div class="regime-score" style="color:#fca5a5;">MPSI peak: +25.1</div>
+                    </div>
+                </div>
+                <div class="regime-item">
+                    <div class="regime-dot dove"></div>
+                    <div>
+                        <div class="regime-period">Jun 2024 — Present</div>
+                        <div class="regime-title" style="color:#93c5fd;">Normalization & Cuts</div>
+                        <div class="regime-desc">MPSI dovish 6 months before Dec 2024 first cut.</div>
+                        <div class="regime-score" style="color:#93c5fd;">MPSI: –18.2</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SESSION RECENT / MODEL DIAGNOSTICS -->
+        {% if recent and recent|length > 0 %}
+        <div class="card">
+            <div class="card-head">
+                <span class="card-title"><i class="fas fa-history"></i> Recent Session Analyses</span>
+                <a href="/results" style="font-size:11px;color:var(--accent2);text-decoration:none;">View all →</a>
+            </div>
+            <div class="card-body" style="padding:.75rem 1.25rem;">
+                {% for r in recent %}
+                <div class="recent-item">
+                    <div>
+                        <div class="recent-name">{{ r.filename or 'Text Input' }}</div>
+                        <div class="recent-meta">{{ r.timestamp or '' }}</div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:.6rem;">
+                        <span class="badge {{ 'badge-hawk' if r.stance=='Hawkish' else ('badge-dove' if r.stance=='Dovish' else 'badge-neut') }}">
+                            {{ r.stance }}
+                        </span>
+                        <span class="recent-score {{ 'c-hawk' if r.mpsi_score > 0 else 'c-dove' }}"
+                              style="color:{{ '#fca5a5' if r.mpsi_score > 0 else '#93c5fd' }};">
+                            {{ r.mpsi_score }}
+                        </span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <div class="card">
+            <div class="card-head">
+                <span class="card-title"><i class="fas fa-microscope"></i> Model Diagnostics</span>
+            </div>
+            <div class="card-body" style="padding:.75rem 1.25rem;">
+                <table class="stat-table">
+                    <tr><td>Pearson r (MPSI vs FFR)</td><td>0.689 ***</td></tr>
+                    <tr><td>R-squared</td><td>0.475</td></tr>
+                    <tr><td>Regression slope (β₁)</td><td>0.102</td></tr>
+                    <tr><td>Sample size</td><td>119 docs / 74 months</td></tr>
+                    <tr><td>Breusch-Pagan p-value</td><td style="color:#6ee7b7;">0.14 ✓</td></tr>
+                    <tr><td>Durbin-Watson</td><td style="color:#6ee7b7;">1.89 ✓</td></tr>
+                    <tr><td>FinBERT Accuracy</td><td style="color:#6ee7b7;">84.2%</td></tr>
+                    <tr><td>FinBERT Macro F1</td><td style="color:#6ee7b7;">0.833</td></tr>
+                    <tr><td>Keyword Weight</td><td>70%</td></tr>
+                    <tr><td>FinBERT Weight</td><td>30%</td></tr>
+                    <tr><td>Avg processing time</td><td>&lt; 2 sec/doc</td></tr>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+Chart.defaults.color          = '#7b90b8';
+Chart.defaults.borderColor    = '#243048';
+Chart.defaults.font.family    = "'Inter', sans-serif";
+Chart.defaults.font.size      = 11;
+
+// ── 1. TIME SERIES ──────────────────────────────────────────────────
+(function(){
+    const ctx = document.getElementById('tsChart').getContext('2d');
+    const labels = [
+        'Jan-20','Mar-20','Jun-20','Sep-20','Dec-20',
+        'Mar-21','Jun-21','Sep-21','Dec-21',
+        'Mar-22','Jun-22','Sep-22','Dec-22',
+        'Mar-23','Jun-23','Sep-23','Dec-23',
+        'Mar-24','Jun-24','Sep-24','Dec-24',
+        'Mar-25','Jun-25','Sep-25','Dec-25','Feb-26'
+    ];
+    const mpsi = [
+        -15,-48,-35,-28,-25,
+        -22,-18,-10,-5,
+         +2,+12,+20,+24,
+        +23,+25,+22,+18,
+        +10, +3, -8,-15,
+        -13,-15,-16,-17,-18
+    ];
+    const ffr  = [
+        1.58,0.05,0.05,0.05,0.05,
+        0.05,0.05,0.05,0.05,
+        0.05,1.00,2.50,4.00,
+        4.75,5.00,5.25,5.33,
+        5.33,5.33,5.00,4.50,
+        4.25,4.00,3.75,3.50,3.25
+    ];
+
+    // Annotation plugin substitute — draw colored background zones via dataset
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: 'MPSI',
+                    data: mpsi,
+                    borderColor: '#3b82f6',
+                    backgroundColor: ctx => {
+                        const g = ctx.chart.ctx.createLinearGradient(0,0,0,300);
+                        g.addColorStop(0,'rgba(59,130,246,.18)');
+                        g.addColorStop(1,'rgba(59,130,246,.01)');
+                        return g;
+                    },
+                    borderWidth: 2.5,
+                    tension: .38,
+                    fill: true,
+                    pointRadius: 3,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: mpsi.map(v => v > 10 ? '#ef4444' : v < -10 ? '#3b82f6' : '#6b7280'),
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'FFR %',
+                    data: ffr,
+                    borderColor: '#f59e0b',
+                    borderDash: [6,3],
+                    borderWidth: 2,
+                    tension: .2,
+                    fill: false,
+                    pointRadius: 2,
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#1a2540',
+                    borderColor: '#243048',
+                    borderWidth: 1,
+                    callbacks: {
+                        label: c => c.datasetIndex === 0
+                            ? `  MPSI: ${c.parsed.y}`
+                            : `  FFR: ${c.parsed.y}%`
+                    }
+                }
+            },
+            scales: {
+                x:  {
+                    grid: { color: 'rgba(36,48,72,.5)' },
+                    ticks: { maxRotation: 45, font: { size: 9 } }
+                },
+                y:  {
+                    position: 'left',
+                    min: -60, max: 40,
+                    grid: { color: 'rgba(36,48,72,.5)' },
+                    title: { display: true, text: 'MPSI Score', font: { size: 10 } }
+                },
+                y1: {
+                    position: 'right',
+                    min: 0, max: 7,
+                    grid: { drawOnChartArea: false },
+                    title: { display: true, text: 'Fed Funds Rate %', font: { size: 10 } }
+                }
+            }
+        }
+    });
+})();
+
+// ── 2. LEAD-LAG BAR CHART ───────────────────────────────────────────
+(function(){
+    const ctx   = document.getElementById('lagChart').getContext('2d');
+    const lags  = ['-6','-5','-4','-3','-2','-1','0','+1','+2','+3','+4','+5','+6'];
+    const corrs = [0.194,0.231,0.298,0.363,0.412,0.523,0.601,0.642,0.689,0.721,0.710,0.705,0.700];
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: lags,
+            datasets: [{
+                data: corrs,
+                backgroundColor: corrs.map((v,i) => {
+                    if (i === 9) return 'rgba(16,185,129,.85)';   // peak
+                    if (i >= 6)  return 'rgba(99,102,241,.70)';   // MPSI leads
+                    return 'rgba(107,114,128,.35)';               // FFR leads
+                }),
+                borderRadius: 4,
+                borderSkipped: false
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#1a2540',
+                    borderColor: '#243048',
+                    borderWidth: 1,
+                    callbacks: {
+                        title: t => `Lag ${t[0].label} months`,
+                        label: c => `  Pearson r = ${c.parsed.y.toFixed(3)}`
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    title: {
+                        display: true,
+                        text: 'Months (negative = FFR leads · positive = MPSI leads FFR)',
+                        font: { size: 10 }
+                    }
+                },
+                y: {
+                    min: 0, max: .85,
+                    grid: { color: 'rgba(36,48,72,.5)' },
+                    title: { display: true, text: 'Pearson r', font: { size: 10 } }
+                }
+            }
+        }
+    });
+})();
+
+// ── 3. BENCHMARK RADAR / BAR ────────────────────────────────────────
+(function(){
+    const ctx = document.getElementById('benchChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: ['Hybrid MPSI','Keywords Only','FinBERT','L-M Dict','VADER'],
+            datasets: [{
+                data: [0.689, 0.621, 0.543, 0.482, 0.413],
+                backgroundColor: 'rgba(99,102,241,.15)',
+                borderColor: '#6366f1',
+                pointBackgroundColor: ['#6366f1','#10b981','#f59e0b','#8b5cf6','#6b7280'],
+                pointRadius: 5,
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                r: {
+                    min: 0.3, max: 0.75,
+                    grid: { color: 'rgba(36,48,72,.6)' },
+                    angleLines: { color: 'rgba(36,48,72,.6)' },
+                    pointLabels: { font: { size: 10 }, color: '#7b90b8' },
+                    ticks: { display: false }
+                }
+            }
+        }
+    });
+})();
+</script>
+{% endblock %}

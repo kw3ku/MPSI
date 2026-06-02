@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% block title %}About MPSI{% endblock %}
+
+{% block content %}
+<div class="page">
+    <div style="max-width:900px;margin:0 auto;">
+
+        <!-- Hero -->
+        <div class="card" style="margin-bottom:1.5rem;border-color:var(--accent);">
+            <div class="card-body" style="padding:2rem;">
+                <h1 style="font-size:1.4rem;font-weight:700;margin-bottom:.5rem;">
+                    Automated Monetary Policy Stance Index (MPSI)
+                </h1>
+                <p style="font-size:14px;color:var(--text-secondary);margin-bottom:1rem;">
+                    A FinBERT-Driven Framework for Quantifying Federal Reserve Communication
+                </p>
+                <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+                    <span class="tag neutral" style="font-size:12px;padding:4px 10px;">Dompreh, F. (2026)</span>
+                    <a href="https://ssrn.com/abstract=6859459" target="_blank" rel="noopener" class="btn btn-outline btn-sm">
+                        <i class="fas fa-external-link-alt"></i> SSRN 6859459
+                    </a>
+                    <span style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;">
+                        <i class="fas fa-university" style="margin-right:4px;"></i> Working Paper
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Key stats -->
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem;">
+            <div class="card" style="text-align:center;">
+                <div class="card-body" style="padding:1.25rem;">
+                    <div style="font-size:2rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--accent-light);">0.689</div>
+                    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Pearson r (p &lt; 0.001)</div>
+                    <div style="font-size:11px;color:var(--text-muted);">MPSI vs Fed Funds Rate</div>
+                </div>
+            </div>
+            <div class="card" style="text-align:center;">
+                <div class="card-body" style="padding:1.25rem;">
+                    <div style="font-size:2rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--success);">0.853</div>
+                    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Peak cross-correlation</div>
+                    <div style="font-size:11px;color:var(--text-muted);">MPSI leads FFR +3 months</div>
+                </div>
+            </div>
+            <div class="card" style="text-align:center;">
+                <div class="card-body" style="padding:1.25rem;">
+                    <div style="font-size:2rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--warning);">84.2%</div>
+                    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">FinBERT accuracy</div>
+                    <div style="font-size:11px;color:var(--text-muted);">Macro F1 = 0.833</div>
+                </div>
+            </div>
+            <div class="card" style="text-align:center;">
+                <div class="card-body" style="padding:1.25rem;">
+                    <div style="font-size:2rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--text-primary);">284</div>
+                    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Fed documents</div>
+                    <div style="font-size:11px;color:var(--text-muted);">Jan 2020 – Mar 2026</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Abstract -->
+        <div class="card" style="margin-bottom:1.5rem;">
+            <div class="card-header">
+                <span class="card-title"><i class="fas fa-quote-left"></i> Abstract</span>
+            </div>
+            <div class="card-body">
+                <p style="font-size:14px;color:var(--text-secondary);line-height:1.75;">
+                    This paper develops an Automated Monetary Policy Stance Index (MPSI) leveraging fine-tuned FinBERT
+                    to quantify the Federal Reserve's communication stance from FOMC statements, meeting minutes, and
+                    Chair speeches. The hybrid framework integrates contextual NLP (30%) with domain-specific keyword
+                    detection (70%) to produce a continuous score bounded between −100 (maximally dovish) and +100
+                    (maximally hawkish).
+                </p>
+                <p style="font-size:14px;color:var(--text-secondary);line-height:1.75;margin-top:.75rem;">
+                    Validated against 284 Fed documents spanning 2020–2026, MPSI achieves a Pearson correlation of
+                    <strong style="color:var(--accent-light);">r = 0.689</strong> (p &lt; 0.001) with the Federal Funds Rate.
+                    Cross-correlation analysis reveals MPSI <strong style="color:var(--success);">leads FFR by 2–3 months</strong>
+                    (r = 0.853 at lag +3), demonstrating strong forward-looking signal value for monetary policy forecasting.
+                    MPSI outperforms all baselines including Loughran-McDonald (r = 0.482) and VADER (r = 0.413).
+                </p>
+            </div>
+        </div>
+
+        <!-- Methodology -->
+        <div class="card" style="margin-bottom:1.5rem;">
+            <div class="card-header">
+                <span class="card-title"><i class="fas fa-cogs"></i> Methodology</span>
+            </div>
+            <div class="card-body">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+                    <div>
+                        <div style="font-size:13px;font-weight:600;color:var(--accent-light);margin-bottom:.75rem;"><i class="fas fa-key"></i> Component 1: Keyword Detection (70%)</div>
+                        <p style="font-size:13px;color:var(--text-secondary);line-height:1.6;">
+                            Domain-specific lexicon of 35+ hawkish terms (tighten, hike, restrictive, inflation risk)
+                            and 35+ dovish terms (accommodate, ease, support, labor market slack) developed for
+                            Fed communication. Weighted net keyword score scaled to [−100, +100].
+                        </p>
+                    </div>
+                    <div>
+                        <div style="font-size:13px;font-weight:600;color:var(--warning);margin-bottom:.75rem;"><i class="fas fa-brain"></i> Component 2: FinBERT (30%)</div>
+                        <p style="font-size:13px;color:var(--text-secondary);line-height:1.6;">
+                            ProsusAI/FinBERT processes 512-token document windows to classify hawkish/neutral/dovish
+                            probability. Handles negation and conditionality that keyword-only approaches miss.
+                            MPSI₍FinBERT₎ = P(hawkish) − P(dovish) × 100.
+                        </p>
+                    </div>
+                </div>
+                <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-md);padding:1.25rem;margin-top:1.25rem;">
+                    <div style="font-size:13px;font-weight:600;margin-bottom:.5rem;">Hybrid Formula</div>
+                    <pre style="font-size:13px;color:var(--accent-light);font-family:'JetBrains Mono',monospace;">MPSI = 0.70 × MPSI_keyword + 0.30 × MPSI_FinBERT</pre>
+                    <div style="font-size:12px;color:var(--text-muted);margin-top:.5rem;">
+                        Weights optimized by grid search on FFR correlation. Range: [−100, +100]. Threshold: ±10 for Hawkish/Dovish.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistical Results -->
+        <div class="card" style="margin-bottom:1.5rem;">
+            <div class="card-header">
+                <span class="card-title"><i class="fas fa-chart-bar"></i> Statistical Validation</span>
+            </div>
+            <div class="card-body">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+                    <div>
+                        <div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.75rem;">Correlation Analysis</div>
+                        <table class="stats-table">
+                            <tbody>
+                                <tr><td>Pearson r</td><td class="mono accent-text">0.689***</td></tr>
+                                <tr><td>R-squared</td><td class="mono">0.475</td></tr>
+                                <tr><td>95% CI</td><td class="mono">[0.581, 0.779]</td></tr>
+                                <tr><td>Regression slope β₁</td><td class="mono">0.102</td></tr>
+                                <tr><td>Intercept β₀</td><td class="mono">3.320</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div>
+                        <div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.75rem;">Diagnostic Tests</div>
+                        <table class="stats-table">
+                            <tbody>
+                                <tr><td>Granger Causality (F)</td><td class="mono success-text">8.42, p = 0.001</td></tr>
+                                <tr><td>Breusch-Pagan</td><td class="mono success-text">p = 0.14 ✓</td></tr>
+                                <tr><td>Shapiro-Wilk (W)</td><td class="mono success-text">0.976 ✓</td></tr>
+                                <tr><td>Durbin-Watson</td><td class="mono success-text">1.89 ✓</td></tr>
+                                <tr><td>Directional Accuracy</td><td class="mono success-text">80%</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Coverage -->
+        <div class="card" style="margin-bottom:1.5rem;">
+            <div class="card-header">
+                <span class="card-title"><i class="fas fa-database"></i> Dataset</span>
+            </div>
+            <div class="card-body">
+                <table class="stats-table">
+                    <thead><tr><th>Document Type</th><th>N</th><th>Mean MPSI</th><th>Coverage</th></tr></thead>
+                    <tbody>
+                        <tr><td>FOMC Statements</td><td class="mono">96</td><td class="mono neutral-text">-3.2</td><td>2020–2026</td></tr>
+                        <tr><td>FOMC Minutes</td><td class="mono">48</td><td class="mono dovish-text">-12.8</td><td>2020–2026</td></tr>
+                        <tr><td>Chair Speeches</td><td class="mono">38</td><td class="mono dovish-text">-9.2</td><td>2020–2025</td></tr>
+                        <tr><td>Economic Outlook</td><td class="mono">102</td><td class="mono neutral-text">-1.8</td><td>2022–2026</td></tr>
+                        <tr style="font-weight:600;"><td><strong>Total</strong></td><td class="mono"><strong>284</strong></td><td class="mono"><strong>-7.9</strong></td><td>74 months</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Citation -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title"><i class="fas fa-bookmark"></i> Citation</span>
+            </div>
+            <div class="card-body">
+                <pre style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-md);padding:1.25rem;font-size:12px;color:var(--text-secondary);white-space:pre-wrap;font-family:'JetBrains Mono',monospace;">Dompreh, F. (2026). Automated Monetary Policy Stance Index (MPSI):
+A FinBERT-Driven Framework for Quantifying Federal Reserve Communication.
+SSRN Electronic Journal. https://doi.org/10.2139/ssrn.6859459</pre>
+                <a href="https://ssrn.com/abstract=6859459" target="_blank" rel="noopener" class="btn btn-primary" style="margin-top:1rem;">
+                    <i class="fas fa-external-link-alt"></i> View on SSRN
+                </a>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
