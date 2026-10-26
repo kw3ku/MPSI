@@ -17,6 +17,7 @@ Hybrid weights from Proposition 2 (minimum-variance estimator):
 """
 
 import math
+import os
 import torch
 from transformers import BertTokenizer, BertForSequenceClassification
 import pandas as pd
@@ -187,10 +188,12 @@ class HybridMPSICalculator:
         print("HYBRID MPSI CALCULATOR - INITIALIZING")
         print("="*70)
         
-        # Load FinBERT
-        print("\n✅ Loading FinBERT model...")
-        self.tokenizer = BertTokenizer.from_pretrained("ProsusAI/finbert")
-        self.model = BertForSequenceClassification.from_pretrained("ProsusAI/finbert")
+        # Load FinBERT — set MPSI_FINBERT_MODEL to a Hugging Face id or local
+        # path to use a fine-tuned checkpoint instead of the stock model
+        model_name = os.environ.get("MPSI_FINBERT_MODEL", "ProsusAI/finbert")
+        print(f"\n✅ Loading FinBERT model ({model_name})...")
+        self.tokenizer = BertTokenizer.from_pretrained(model_name)
+        self.model = BertForSequenceClassification.from_pretrained(model_name)
         self.model.eval()
         print("✅ FinBERT loaded")
         
@@ -224,11 +227,9 @@ class HybridMPSICalculator:
                 outputs = self.model(**inputs)
                 probs = torch.nn.functional.softmax(outputs.logits, dim=-1)[0]
             
-            all_sentiments.append({
-                'positive': float(probs[0]),
-                'negative': float(probs[1]),
-                'neutral': float(probs[2])
-            })
+            # Map by label name — fine-tuned checkpoints may order labels differently
+            labels = self.model.config.id2label
+            all_sentiments.append({labels[i].lower(): float(p) for i, p in enumerate(probs)})
         
         # Average
         avg_sentiment = {

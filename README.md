@@ -1,6 +1,6 @@
 # Automated Monetary Policy Sentiment Index (MPSI)
 
-A hybrid NLP framework combining a fine-tuned FinBERT transformer with Taylor Rule-grounded keyword scoring to measure Federal Reserve communication stance in real time.
+A hybrid NLP framework combining a FinBERT transformer with Taylor Rule-grounded keyword scoring to measure Federal Reserve communication stance in real time.
 
 ## Paper
 
@@ -19,6 +19,8 @@ https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6859459
 - 10-point MPSI surprise → **42.3 bps** on 2-Year Treasury yields
 - Outperforms Romer-Romer, Hansen-McMahon, and Taylor Rule benchmarks
 
+The correlation results reproduce exactly from this repository (`bash replication/run_all.sh`). The lead, yield and benchmark results do not yet have scripts here. See [REPLICATION.md](REPLICATION.md) for the status of each claim and for known limitations.
+
 ## Method
 
 The MPSI uses a two-component hybrid architecture:
@@ -26,9 +28,9 @@ The MPSI uses a two-component hybrid architecture:
 | Component | Weight | Role |
 |-----------|--------|------|
 | Policy Keyword Scorer (Taylor Rule-grounded dictionary) | 0.70 | Explicit stance detection |
-| Fine-tuned FinBERT (ProsusAI/finbert) | 0.30 | Contextual tone & negation |
+| FinBERT (`ProsusAI/finbert`) | 0.30 | Contextual tone & negation |
 
-**Final formula:** `MPSI_t = 0.70 × Keyword_t + 0.30 × FinBERT_t`
+**Final formula:** `MPSI_t = 0.70 × Keyword_t + 0.30 × FinBERT_t`, on a scale of −100 (most dovish) to +100 (most hawkish); |MPSI| ≤ 10 is Neutral.
 
 Weights are derived from the information-theoretic minimum-variance estimator (precision weighting), confirmed by sensitivity analysis across 119 Fed documents spanning 2020 Q1–2026 Q1.
 
@@ -46,7 +48,7 @@ from models.mpsi_calculator import HybridMPSICalculator
 calc = HybridMPSICalculator()
 result = calc.calculate_hybrid_mpsi("The Committee decided to raise the target range...")
 print(result)
-# {'mpsi': 72.4, 'stance': 'Hawkish', 'keyword_score': 80.1, 'finbert_score': 51.2}
+# {'mpsi_score': ..., 'keyword_mpsi': ..., 'finbert_mpsi': ..., 'stance': 'Hawkish', ...}
 ```
 
 ## Repository Structure
@@ -65,18 +67,29 @@ MPSI/
 │       └── mpsi_hybrid_scores.csv   ← 119-document scored corpus
 ├── app.py                      ← Flask application factory
 ├── config.py
-├── validate_mpsi.py            ← weight sensitivity & validation
+├── validate_mpsi.py            ← negation and known-event spot checks
+├── replication/                ← reproduces the paper's scores and FFR results
+│   ├── paper_v1.py             ← frozen scorer used for the paper
+│   ├── corpus/                 ← Fed document texts + checksum manifest
+│   └── ffr_validation.py
+├── tests/
 └── requirements.txt
 ```
 
 ## Data
 
-119 Fed documents (2020 Q1–2026 Q1) across five types:
-- FOMC Statements
-- FOMC Minutes
-- Chair Speeches (BIS Database)
-- Jackson Hole Speeches
-- Economic Outlook Reports
+119 Fed documents (2020 Q1–2026 Q1):
+
+| Type | Documents |
+|---|---|
+| FOMC Statements | 53 |
+| FOMC Minutes (incl. Jan 2026 press conference) | 51 |
+| Chair Speeches (Jackson Hole) | 6 |
+| Economic Outlook speeches | 9 |
+
+The texts are in `replication/corpus/us_fed/`, with checksums in `replication/corpus/MANIFEST.csv`.
+
+Note: the dashboard scorer in `models/mpsi_calculator.py` is a later version (weighted keywords, tanh normalisation). It gives different numbers from the published scores in `data/processed/mpsi_hybrid_scores.csv`, which come from `replication/paper_v1.py`. Set `MPSI_FINBERT_MODEL` to use a different FinBERT checkpoint.
 
 ## Citation
 

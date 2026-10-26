@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you use MPSI, please cite the working paper below."
+title: "Automated Monetary Policy Sentiment Index (MPSI)"
+type: software
+license: MIT
+repository-code: "https://github.com/kw3ku/MPSI"
+url: "https://fedmpsi.com"
+authors:
+  - family-names: Dompreh
+    given-names: Foster
+    orcid: "https://orcid.org/0009-0003-2566-2238"
+    affiliation: "University of Wisconsin-Madison"
+preferred-citation:
+  type: article
+  title: "Automated Monetary Policy Sentiment Index (MPSI): A FinBERT-Driven Framework for Interpreting Central Bank Communications in the United States"
+  authors:
+    - family-names: Dompreh
+      given-names: Foster
+      orcid: "https://orcid.org/0009-0003-2566-2238"
+  journal: "SSRN Working Paper"
+  number: "6859459"
+  year: 2026
+  url: "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6859459"

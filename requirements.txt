@@ -18,11 +18,14 @@ pytz==2025.2
 tzdata==2025.3
 
 # ML / NLP
-torch==2.2.2. # For CPU-only, use torch==2.2.2+cpu - see https://pytorch.org/get-started/locally/
+torch==2.2.2  # CPU-only: pip install torch==2.2.2 --index-url https://download.pytorch.org/whl/cpu
 # use transformers 4.39.3 for better compatibility with older PyTorch versions and to avoid issues with newer versions
-# pip install torch==2.2.2 --index-url https://download.pytorch.org/whl/cpu
 transformers==4.39.3
 tqdm==4.67.1
+
+# Replication scripts (replication/) and tests
+scipy==1.13.1
+pytest
 
 # PDF export
 reportlab
