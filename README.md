@@ -19,7 +19,7 @@ https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6859459
 - 10-point MPSI surprise → **42.3 bps** on 2-Year Treasury yields
 - Outperforms Romer-Romer, Hansen-McMahon, and Taylor Rule benchmarks
 
-The correlation results reproduce exactly from this repository (`bash replication/run_all.sh`). The lead, yield and benchmark results do not yet have scripts here. See [REPLICATION.md](REPLICATION.md) for the status of each claim and for known limitations.
+The correlation results reproduce exactly from this repository (`bash replication/run_all.sh`). The Granger and 2-year yield results are not reproduced by the scripts added here (`replication/granger_ffr.py`, `replication/yield_event_study.py`), and the benchmark results do not yet have scripts. See [REPLICATION.md](REPLICATION.md) for the status of each claim and for known limitations.
 
 ## Method
 

@@ -11,4 +11,6 @@ if [[ "${1:-}" == "--full" ]]; then
 fi
 python replication/verify_scores.py
 python replication/ffr_validation.py
+python replication/granger_ffr.py
+python replication/yield_event_study.py
 python -m pytest -q tests

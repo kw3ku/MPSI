@@ -37,12 +37,15 @@ Row A is the paper's result (r = 0.689, R² = 0.475, slope = 0.102).
 | `paper_v1.py` | Frozen copy of the scorer that produced the published CSV. The two classes are verbatim from the research script `01-mpsi_hybrid.py`; adds a `--keywords-only` mode that needs no torch. |
 | `verify_scores.py` | Checks corpus checksums, rebuilt keyword columns, the 70/30 hybrid identity, and (if rebuilt) the FinBERT column against the published CSV. |
 | `ffr_validation.py` | Monthly MPSI vs Fed Funds Rate: correlation table (specs A–C) and lead/lag table. |
+| `granger_ffr.py` | Granger tests between monthly MPSI and ΔFFR, lags 1–6, four specifications. |
+| `yield_event_study.py` | 2-year Treasury yield response to MPSI surprises on FOMC statement days (three surprise definitions, two windows). |
 | `fetch_fred.py` | Downloads a fresh copy of FRED series `DFF`. |
 | `run_all.sh` | Runs everything above plus `pytest tests/`. |
 | `corpus/us_fed/` | 118 of the 119 scored Fed documents (plain text). |
 | `corpus/MANIFEST.csv` | All 119 documents with SHA-256, word count, and notes. |
 | `data/fed_funds_paper_handcoded.csv` | The monthly Fed Funds table typed into the research script `03-validate_mpsi_fix.py` (2020-01 to 2025-04). This is the series behind the paper's r = 0.689. |
 | `data/fred_dff_snapshot_2026-03-19.csv` | FRED `DFF` (daily effective FFR) as downloaded on 2026-03-19, kept so results do not drift. |
+| `data/fred_dgs2_snapshot_2026-11-22.csv` | FRED `DGS2` (daily 2-year Treasury yield) as downloaded on 2026-11-22. |
 | `output/` | Generated files (git-ignored). |
 
 ---
@@ -99,8 +102,8 @@ For each document *t*:
 | FinBERT column | ✅ exact, 118/118 (max difference 0.00) | Requires `--full`; stock `ProsusAI/finbert`, transformers 4.39.3, torch 2.2.2. About 12 min on a CPU-only Intel i7 Mac mini. |
 | MPSI = 0.70 × Keyword + 0.30 × FinBERT | ✅ 119/119 | |
 | r = 0.689, R² = 0.475, slope 0.102, p < 0.001 | ✅ exact | Spec A: 47 months, hand-entered FFR. |
-| MPSI leads FFR by 2–3 months; Granger causality | ⚠️ not reproducible from this repo | No script found that runs Granger tests of MPSI on FFR. The lead/lag table (below) is provided instead. |
-| 10-point MPSI surprise → 42.3 bps on 2-year Treasury | ⚠️ not reproducible from this repo | No code found that uses 2-year yields (FRED `DGS2`) or defines an MPSI surprise. |
+| MPSI leads FFR by 2–3 months; Granger causality (F = 8.42, p < 0.001) | ❌ not reproduced | No original script found. `granger_ffr.py` gives F between 0.03 and 1.80 (p ≥ 0.16) for MPSI → ΔFFR at every lag 1–6 in every specification; the reverse direction is significant. See below. |
+| 10-point MPSI surprise → 42.3 bps on 2-year Treasury (t = 5.82, R² = 0.41) | ❌ not reproduced | No original script or surprise definition found. `yield_event_study.py` gives −0.1 to +2.7 bps per 10 points, |t| ≤ 1.3, R² ≤ 0.03 across all definitions tried. See below. |
 | Outperforms Romer-Romer, Hansen-McMahon, Taylor Rule | ⚠️ not reproducible from this repo | No benchmark-comparison code found. |
 | Weight sensitivity (w_K = 0.5…0.9, peak at 0.70) | ⚠️ not reproducible from this repo | Table appears in notes; no generating script found. |
 
@@ -113,6 +116,35 @@ corr(MPSI_t, FFR_{t+k}); k > 0 means MPSI leads.
 | r | 0.22 | 0.42 | 0.54 | 0.60 | 0.64 | 0.68 | 0.73 | 0.76 | 0.77 | 0.79 |
 
 The correlation keeps rising through k = 6 rather than peaking at 2–3 months. Both series are highly persistent in levels over 2020–2026 (one easing-hiking-holding cycle), so a level correlation that grows with the lead is expected and is not by itself evidence of predictive content. A Granger test on changes (ΔFFR) with lag selection is the appropriate check.
+
+### Granger causality (`granger_ffr.py`)
+
+Monthly calendar, FRED DFF monthly mean, MPSI carried forward through the 18 of 72 months with no dated document, all lag orders estimated on 2020-08 to 2026-01 (n = 66). The paper does not state its lag order or sample.
+
+| Lags | 1 | 2 | 3 | 4 | 5 | 6 | Paper |
+|---|---|---|---|---|---|---|---|
+| MPSI → ΔFFR, F | 0.03 | 0.07 | 1.55 | 1.08 | 1.19 | 0.98 | 8.42 |
+| p | 0.87 | 0.93 | 0.21 | 0.38 | 0.33 | 0.45 | < 0.001 |
+| ΔFFR → MPSI, F | 7.32 | 4.49 | 4.88 | 4.63 | 4.68 | 4.56 | 1.73 |
+| p | 0.009 | 0.015 | 0.004 | 0.003 | 0.001 | 0.001 | 0.168 |
+
+BIC selects 1 lag and AIC 5 lags for MPSI → ΔFFR. The pattern is the reverse of the paper's Table 18: lagged MPSI does not help predict rate changes, while lagged rate changes do help predict MPSI. The same holds with statements only, with MPSI in first differences (reverse direction weaker, p = 0.006 to 0.11), and with the paper's hand-entered FFR table. The F-statistics match `statsmodels.tsa.stattools.grangercausalitytests` on the same sample.
+
+### 2-year yield event study (`yield_event_study.py`)
+
+Events are the dated documents under `fomc_statements/` (52 usable; 46 after dropping six that are not scheduled post-meeting statements). The yield change is the FRED `DGS2` close-to-close change in basis points. The paper does not define an MPSI surprise, so three definitions are reported.
+
+| Surprise | Window | n | bps per 10 points | t (OLS) | R² |
+|---|---|---|---|---|---|
+| change from previous statement | 1 day | 52 | 0.95 | 0.70 | 0.010 |
+| change from previous statement | 2 days | 52 | 2.38 | 1.24 | 0.030 |
+| deviation from mean of previous 3 | 1 day | 50 | 0.18 | 0.15 | 0.000 |
+| deviation from mean of previous 3 | 2 days | 50 | 1.30 | 0.73 | 0.011 |
+| AR(1) residual | 1 day | 52 | 0.18 | 0.13 | 0.000 |
+| AR(1) residual | 2 days | 52 | 0.97 | 0.48 | 0.005 |
+| **Paper Table 19** | | | **42.3** | **5.82** | **0.41** |
+
+The mean absolute statement-to-statement change in MPSI is 6.0 points and the mean absolute 1-day move in the 2-year yield on these days is 6.4 bps. A coefficient of 42.3 bps per 10 points would imply typical moves of about 25 bps.
 
 ---
 
@@ -134,6 +166,7 @@ These are listed so readers and reviewers are not surprised; deciding how to res
 - **Undated documents excluded from the time series.** All 15 speeches and outlook documents have no date in their file names, so only statements and minutes enter the monthly analysis.
 - **Duplicate document.** `economic_outlook/rv_ec_out_2024.txt` is byte-identical to `fed_chair_speeches/jackson_hole_2024.txt`.
 - **Minutes are dated by meeting date, not release date.** FOMC minutes are published about three weeks after the meeting, so assigning them to the meeting month uses information before it was public. This matters for any lead/forecast claim.
+- **Misdated statement.** `fomc_statements/fomc_st_20211216.txt` contains a 2020 pandemic-era statement, not a December 2021 one; the file-name date puts it in the wrong month of the time series.
 - **Mixed document types under `fomc_minutes/`.** It includes the 2026-01-28 press conference and transcript files.
 
 ---
@@ -154,8 +187,9 @@ To publish the fine-tuned model: `huggingface-cli login`, then `huggingface-cli 
 
 ## Still to do
 
-- [ ] Add the Granger-causality script (ΔFFR on lagged MPSI, with lag selection) used for the 2–3 month lead claim.
-- [ ] Add the 2-year Treasury event study (FRED `DGS2`) behind the 42.3 bps result, including the definition of an MPSI surprise.
+- [x] Add a Granger-causality script (ΔFFR on lagged MPSI, with lag selection). Done: `granger_ffr.py`; it does not reproduce the paper's Table 18.
+- [x] Add a 2-year Treasury event study (FRED `DGS2`). Done: `yield_event_study.py`; it does not reproduce the paper's Table 19.
+- [ ] Locate the original code or specification (lag order, sample, surprise definition, event window) behind Tables 18 and 19, or revise those claims in the paper and README.
 - [ ] Add the benchmark comparison (Romer-Romer, Hansen-McMahon, Taylor Rule) and the weight-sensitivity script.
 - [ ] Publish the fine-tuned FinBERT and the 1,500-sentence training set, or state in the paper that the stock model was used.
 - [ ] Archive a tagged release on Zenodo for a citable DOI.
