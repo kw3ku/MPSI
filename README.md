@@ -37,7 +37,7 @@ The MPSI uses a two-component hybrid architecture:
 
 **Final formula:** `MPSI_t = 0.70 × Keyword_t + 0.30 × FinBERT_t`, on a scale of −100 (most dovish) to +100 (most hawkish); |MPSI| ≤ 10 is Neutral.
 
-Weights are derived from the information-theoretic minimum-variance estimator (precision weighting), confirmed by sensitivity analysis across 119 Fed documents spanning 2020 Q1–2026 Q1.
+The 0.70 / 0.30 weights are fixed. The published scores cover 119 Fed documents from January 2020 to January 2026 and use the pre-trained `ProsusAI/finbert` model; a model trained on labeled FOMC sentences is in development.
 
 ## Installation
 

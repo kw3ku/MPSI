@@ -7,7 +7,9 @@ Dashboard blueprint — public-facing pages: home, historical chart, about.
 """
 
 import pandas as pd
-from flask import Blueprint, render_template, flash, redirect, url_for
+from pathlib import Path
+
+from flask import Blueprint, render_template, flash, redirect, url_for, current_app
 
 import extensions
 
@@ -18,45 +20,46 @@ dashboard_bp = Blueprint('dashboard', __name__)
 # Home / overview
 # ─────────────────────────────────────────────
 
-@dashboard_bp.route('/')
-def index():
-    history = extensions.analysis_history
+def _stance(x):
+    return 'Hawkish' if x > 10 else ('Dovish' if x < -10 else 'Neutral')
 
-    if history:
-        df    = pd.DataFrame(history)
-        stats = {
-            'total_analyzed': len(df),
-            'avg_mpsi':       round(df['mpsi_score'].mean(), 2),
-            'hawkish_count':  int((df['stance'] == 'Hawkish').sum()),
-            'dovish_count':   int((df['stance'] == 'Dovish').sum()),
-            'neutral_count':  int((df['stance'] == 'Neutral').sum()),
-        }
-    else:
-        stats = {
-            'total_analyzed': 0,
-            'avg_mpsi':       0,
-            'hawkish_count':  0,
-            'dovish_count':   0,
-            'neutral_count':  0,
-        }
 
-    recent      = history[-5:][::-1] if history else []
-    total_docs  = stats['total_analyzed']
-    stance_counts = {
-        'Hawkish': stats['hawkish_count'],
-        'Dovish':  stats['dovish_count'],
-        'Neutral': stats['neutral_count'],
+def _overview():
+    """Dashboard figures computed from the published score file (no hard-coded values)."""
+    df = extensions.historical_df.copy()
+    if df.empty:
+        return None
+    df['date'] = pd.to_datetime(df['date'], errors='coerce')
+    dated = df.dropna(subset=['date']).sort_values('date')
+    monthly = dated.set_index('date')['mpsi_hybrid'].resample('MS').mean().dropna().round(2)
+    labels = monthly.index.strftime('%Y-%m').tolist()
+    try:
+        ffr = pd.read_csv(Path(current_app.config['HISTORICAL_DATA_PATH']).parent / 'ffr_monthly.csv')
+        ffr_map = dict(zip(ffr['month'], ffr['ffr']))
+    except Exception:
+        ffr_map = {}
+    latest = dated.iloc[-1]
+    years = [{'year': int(y), 'n': len(g), 'mean': round(g['mpsi_hybrid'].mean(), 1),
+              'sd': round(g['mpsi_hybrid'].std(), 1), 'stance': _stance(g['mpsi_hybrid'].mean())}
+             for y, g in df.groupby('year')]
+    types = [{'doc_type': t, 'n': len(g), 'mean': round(g['mpsi_hybrid'].mean(), 1),
+              'stance': _stance(g['mpsi_hybrid'].mean())}
+             for t, g in sorted(df.groupby('doc_type'), key=lambda kv: -len(kv[1]))]
+    sc = df['stance'].value_counts().to_dict()
+    return {
+        'total': len(df), 'dated': len(dated), 'months': len(monthly),
+        'hawkish': sc.get('Hawkish', 0), 'neutral': sc.get('Neutral', 0), 'dovish': sc.get('Dovish', 0),
+        'latest_score': round(float(latest['mpsi_hybrid']), 1), 'latest_stance': latest['stance'],
+        'latest_date': latest['date'].strftime('%b %d, %Y'), 'latest_type': latest['doc_type'],
+        'overall_mean': round(df['mpsi_hybrid'].mean(), 1), 'overall_sd': round(df['mpsi_hybrid'].std(), 1),
+        'years': years, 'types': types,
+        'series': {'labels': labels, 'mpsi': monthly.tolist(), 'ffr': [ffr_map.get(l) for l in labels]},
     }
 
-    return render_template(
-        'index.html',
-        stats=stats,
-        recent=recent,
-        total_docs=total_docs,
-        stance_counts=stance_counts,
-        time_series=None,
-        year_data=None,
-    )
+
+@dashboard_bp.route('/')
+def index():
+    return render_template('index.html', ov=_overview())
 
 
 # ─────────────────────────────────────────────
@@ -115,4 +118,4 @@ def history():
 
 @dashboard_bp.route('/about')
 def about():
-    return render_template('about.html')
+    return render_template('about.html', ov=_overview())

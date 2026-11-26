@@ -31,29 +31,29 @@
             <div class="card" style="text-align:center;">
                 <div class="card-body" style="padding:1.25rem;">
                     <div style="font-size:2rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--accent-light);">0.689</div>
-                    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Pearson r (p &lt; 0.001)</div>
-                    <div style="font-size:11px;color:var(--text-muted);">MPSI vs Fed Funds Rate</div>
+                    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Pearson r, paper sample</div>
+                    <div style="font-size:11px;color:var(--text-muted);">MPSI vs Fed Funds Rate, 47 months</div>
                 </div>
             </div>
             <div class="card" style="text-align:center;">
                 <div class="card-body" style="padding:1.25rem;">
-                    <div style="font-size:2rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--success);">0.853</div>
-                    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Peak cross-correlation</div>
-                    <div style="font-size:11px;color:var(--text-muted);">MPSI leads FFR +3 months</div>
+                    <div style="font-size:2rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--success);">0.681</div>
+                    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Pearson r, official FRED series</div>
+                    <div style="font-size:11px;color:var(--text-muted);">same 47 months</div>
                 </div>
             </div>
             <div class="card" style="text-align:center;">
                 <div class="card-body" style="padding:1.25rem;">
-                    <div style="font-size:2rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--warning);">84.2%</div>
-                    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">FinBERT accuracy</div>
-                    <div style="font-size:11px;color:var(--text-muted);">Macro F1 = 0.833</div>
+                    <div style="font-size:2rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--warning);">0.601</div>
+                    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Pearson r, all months</div>
+                    <div style="font-size:11px;color:var(--text-muted);">55 months through Jan 2026</div>
                 </div>
             </div>
             <div class="card" style="text-align:center;">
                 <div class="card-body" style="padding:1.25rem;">
-                    <div style="font-size:2rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--text-primary);">284</div>
-                    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Fed documents</div>
-                    <div style="font-size:11px;color:var(--text-muted);">Jan 2020 – Mar 2026</div>
+                    <div style="font-size:2rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--text-primary);">{{ ov.total }}</div>
+                    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Fed documents scored</div>
+                    <div style="font-size:11px;color:var(--text-muted);">Jan 2020 – Jan 2026</div>
                 </div>
             </div>
         </div>
@@ -61,22 +61,25 @@
         <!-- Abstract -->
         <div class="card" style="margin-bottom:1.5rem;">
             <div class="card-header">
-                <span class="card-title"><i class="fas fa-quote-left"></i> Abstract</span>
+                <span class="card-title"><i class="fas fa-quote-left"></i> Summary</span>
             </div>
             <div class="card-body">
                 <p style="font-size:14px;color:var(--text-secondary);line-height:1.75;">
-                    This paper develops an Automated Monetary Policy Stance Index (MPSI) leveraging fine-tuned FinBERT
-                    to quantify the Federal Reserve's communication stance from FOMC statements, meeting minutes, and
-                    Chair speeches. The hybrid framework integrates contextual NLP (30%) with domain-specific keyword
-                    detection (70%) to produce a continuous score bounded between −100 (maximally dovish) and +100
-                    (maximally hawkish).
+                    The Monetary Policy Stance Index (MPSI) quantifies the Federal Reserve's communication stance
+                    from FOMC statements, meeting minutes, and Chair speeches. The hybrid framework combines
+                    domain-specific keyword detection (70%) with the FinBERT language model (30%) to produce a
+                    continuous score bounded between −100 (maximally dovish) and +100 (maximally hawkish).
                 </p>
                 <p style="font-size:14px;color:var(--text-secondary);line-height:1.75;margin-top:.75rem;">
-                    Validated against 284 Fed documents spanning 2020–2026, MPSI achieves a Pearson correlation of
-                    <strong style="color:var(--accent-light);">r = 0.689</strong> (p &lt; 0.001) with the Federal Funds Rate.
-                    Cross-correlation analysis reveals MPSI <strong style="color:var(--success);">leads FFR by 2–3 months</strong>
-                    (r = 0.853 at lag +3), demonstrating strong forward-looking signal value for monetary policy forecasting.
-                    MPSI outperforms all baselines including Loughran-McDonald (r = 0.482) and VADER (r = 0.413).
+                    Across {{ ov.total }} Fed documents from 2020 to 2026, the monthly index has a Pearson correlation of
+                    <strong style="color:var(--accent-light);">r = 0.689</strong> with the Federal Funds Rate over the
+                    paper's 47-month sample, 0.681 on the same months using the official FRED series, and 0.601 over
+                    all 55 months through January 2026. These results are regenerated by the public replication package.
+                </p>
+                <p style="font-size:14px;color:var(--text-secondary);line-height:1.75;margin-top:.75rem;">
+                    <strong>Replication note (November 2026).</strong> The predictive, market-response and benchmark
+                    results in the first posted version of the working paper are not reproduced by the replication
+                    package and are under revision. They are not reported on this site.
                 </p>
             </div>
         </div>
@@ -99,9 +102,9 @@
                     <div>
                         <div style="font-size:13px;font-weight:600;color:var(--warning);margin-bottom:.75rem;"><i class="fas fa-brain"></i> Component 2: FinBERT (30%)</div>
                         <p style="font-size:13px;color:var(--text-secondary);line-height:1.6;">
-                            ProsusAI/FinBERT processes 512-token document windows to classify hawkish/neutral/dovish
-                            probability. Handles negation and conditionality that keyword-only approaches miss.
-                            MPSI₍FinBERT₎ = P(hawkish) − P(dovish) × 100.
+                            The pre-trained ProsusAI/finbert model scores overlapping windows of each document. Its
+                            positive and negative sentiment probabilities are mapped to a score in [−100, +100].
+                            A model trained on labeled FOMC sentences is in development.
                         </p>
                     </div>
                 </div>
@@ -109,7 +112,7 @@
                     <div style="font-size:13px;font-weight:600;margin-bottom:.5rem;">Hybrid Formula</div>
                     <pre style="font-size:13px;color:var(--accent-light);font-family:'JetBrains Mono',monospace;">MPSI = 0.70 × MPSI_keyword + 0.30 × MPSI_FinBERT</pre>
                     <div style="font-size:12px;color:var(--text-muted);margin-top:.5rem;">
-                        Weights optimized by grid search on FFR correlation. Range: [−100, +100]. Threshold: ±10 for Hawkish/Dovish.
+                        Fixed weights. Range: [−100, +100]. Threshold: ±10 for Hawkish/Dovish.
                     </div>
                 </div>
             </div>
@@ -121,32 +124,18 @@
                 <span class="card-title"><i class="fas fa-chart-bar"></i> Statistical Validation</span>
             </div>
             <div class="card-body">
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
-                    <div>
-                        <div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.75rem;">Correlation Analysis</div>
-                        <table class="stats-table">
-                            <tbody>
-                                <tr><td>Pearson r</td><td class="mono accent-text">0.689***</td></tr>
-                                <tr><td>R-squared</td><td class="mono">0.475</td></tr>
-                                <tr><td>95% CI</td><td class="mono">[0.581, 0.779]</td></tr>
-                                <tr><td>Regression slope β₁</td><td class="mono">0.102</td></tr>
-                                <tr><td>Intercept β₀</td><td class="mono">3.320</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div>
-                        <div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.75rem;">Diagnostic Tests</div>
-                        <table class="stats-table">
-                            <tbody>
-                                <tr><td>Granger Causality (F)</td><td class="mono success-text">8.42, p = 0.001</td></tr>
-                                <tr><td>Breusch-Pagan</td><td class="mono success-text">p = 0.14 ✓</td></tr>
-                                <tr><td>Shapiro-Wilk (W)</td><td class="mono success-text">0.976 ✓</td></tr>
-                                <tr><td>Durbin-Watson</td><td class="mono success-text">1.89 ✓</td></tr>
-                                <tr><td>Directional Accuracy</td><td class="mono success-text">80%</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                <table class="stats-table">
+                    <thead><tr><th>Sample</th><th>Months</th><th>Pearson r</th><th>R²</th><th>OLS slope</th></tr></thead>
+                    <tbody>
+                        <tr><td>Paper sample, Jan 2020 – Mar 2025</td><td class="mono">47</td><td class="mono accent-text">0.689</td><td class="mono">0.475</td><td class="mono">0.102</td></tr>
+                        <tr><td>Same months, official FRED series</td><td class="mono">47</td><td class="mono">0.681</td><td class="mono">0.464</td><td class="mono">0.101</td></tr>
+                        <tr><td>All months through Jan 2026, FRED</td><td class="mono">55</td><td class="mono">0.601</td><td class="mono">0.362</td><td class="mono">0.089</td></tr>
+                    </tbody>
+                </table>
+                <p style="font-size:12px;color:var(--text-muted);margin-top:.75rem;line-height:1.6;">
+                    Correlation of the monthly mean MPSI with the monthly Federal Funds Rate, in levels. A correlation
+                    in levels does not establish that the index predicts policy changes.
+                </p>
             </div>
         </div>
 
@@ -159,11 +148,10 @@
                 <table class="stats-table">
                     <thead><tr><th>Document Type</th><th>N</th><th>Mean MPSI</th><th>Coverage</th></tr></thead>
                     <tbody>
-                        <tr><td>FOMC Statements</td><td class="mono">96</td><td class="mono neutral-text">-3.2</td><td>2020–2026</td></tr>
-                        <tr><td>FOMC Minutes</td><td class="mono">48</td><td class="mono dovish-text">-12.8</td><td>2020–2026</td></tr>
-                        <tr><td>Chair Speeches</td><td class="mono">38</td><td class="mono dovish-text">-9.2</td><td>2020–2025</td></tr>
-                        <tr><td>Economic Outlook</td><td class="mono">102</td><td class="mono neutral-text">-1.8</td><td>2022–2026</td></tr>
-                        <tr style="font-weight:600;"><td><strong>Total</strong></td><td class="mono"><strong>284</strong></td><td class="mono"><strong>-7.9</strong></td><td>74 months</td></tr>
+                        {% for t in ov.types %}
+                        <tr><td>{{ t.doc_type }}</td><td class="mono">{{ t.n }}</td><td class="mono {{ t.stance|lower }}-text">{{ '%+.1f'|format(t.mean) }}</td><td>2020–2026</td></tr>
+                        {% endfor %}
+                        <tr style="font-weight:600;"><td><strong>Total</strong></td><td class="mono"><strong>{{ ov.total }}</strong></td><td class="mono"><strong>{{ '%+.1f'|format(ov.overall_mean) }}</strong></td><td>{{ ov.dated }} dated documents, {{ ov.months }} months</td></tr>
                     </tbody>
                 </table>
             </div>
