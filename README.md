@@ -13,13 +13,18 @@ https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6859459
 
 ## Key Results
 
-- **r = 0.689** with Federal Funds Rate (p < 0.001)
-- Explains **47.5%** of FFR variance (R² = 0.475)
-- Granger-causes FFR changes **2–3 months ahead**
-- 10-point MPSI surprise → **42.3 bps** on 2-Year Treasury yields
-- Outperforms Romer-Romer, Hansen-McMahon, and Taylor Rule benchmarks
+Reproduced from this repository (`bash replication/run_all.sh`):
 
-The correlation results reproduce exactly from this repository (`bash replication/run_all.sh`). The Granger and 2-year yield results are not reproduced by the scripts added here (`replication/granger_ffr.py`, `replication/yield_event_study.py`), and the benchmark results do not yet have scripts. See [REPLICATION.md](REPLICATION.md) for the status of each claim and for known limitations.
+- **r = 0.689** between the monthly MPSI and the Federal Funds Rate over the paper's 47 months (p < 0.001, R² = 0.475)
+- **r = 0.60** over all 55 months that have a document, using FRED data
+
+Under revision, because the scripts added here do not reproduce them:
+
+- The paper reports that MPSI Granger-causes FFR changes 2–3 months ahead. `replication/granger_ffr.py` finds no such lead, and finds instead that past rate changes predict the index.
+- The paper reports a 42.3 bps response of the 2-year Treasury yield to a 10-point MPSI surprise. `replication/yield_event_study.py` finds a response between −0.1 and +2.7 bps, not statistically different from zero.
+- The benchmark comparison (Romer-Romer, Hansen-McMahon, Taylor Rule) and the weight-sensitivity analysis do not yet have scripts.
+
+In short, the published index describes the policy stance but has not been shown to lead it. See [REPLICATION.md](REPLICATION.md) for the status of each claim and [ROADMAP.md](ROADMAP.md) for the work in progress on a second version.
 
 ## Method
 

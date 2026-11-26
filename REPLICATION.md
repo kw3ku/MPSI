@@ -189,7 +189,8 @@ To publish the fine-tuned model: `huggingface-cli login`, then `huggingface-cli 
 
 - [x] Add a Granger-causality script (ΔFFR on lagged MPSI, with lag selection). Done: `granger_ffr.py`; it does not reproduce the paper's Table 18.
 - [x] Add a 2-year Treasury event study (FRED `DGS2`). Done: `yield_event_study.py`; it does not reproduce the paper's Table 19.
-- [ ] Locate the original code or specification (lag order, sample, surprise definition, event window) behind Tables 18 and 19, or revise those claims in the paper and README.
+- [x] Revise the Table 18 and 19 claims in the README. Done: both are now listed as under revision.
+- [ ] Revise the same claims in the paper (SSRN 6859459), or locate the original code or specification behind Tables 18 and 19.
 - [ ] Add the benchmark comparison (Romer-Romer, Hansen-McMahon, Taylor Rule) and the weight-sensitivity script.
 - [ ] Publish the fine-tuned FinBERT and the 1,500-sentence training set, or state in the paper that the stock model was used.
 - [ ] Archive a tagged release on Zenodo for a citable DOI.
